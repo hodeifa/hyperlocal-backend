@@ -1,3 +1,6 @@
-.env
 *.pbf
 *.osm
+*.mbtiles
+osm-data/
+tileserver-data/
+nominatim-pg-data/

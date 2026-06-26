@@ -1,0 +1,106 @@
+services:
+  # 1. PostgreSQL 16 + PostGIS (Database Utama)
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: hyperlocal-postgres
+    environment:
+      POSTGRES_USER: hyperlocal
+      POSTGRES_PASSWORD: hyperlocal_secret
+      POSTGRES_DB: hyperlocal
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hyperlocal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis 7 (Cache, Geo-Spatial, Pub/Sub)
+  redis:
+    image: redis:7-alpine
+    container_name: hyperlocal-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 3. MinIO (Object Storage)
+  minio:
+    image: minio/minio:latest
+    container_name: hyperlocal-minio
+    environment:
+      MINIO_ROOT_USER: hyperlocal
+      MINIO_ROOT_PASSWORD: hyperlocal_secret123
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 4. OSRM (Routing & Jarak) - MODE SEPEDA
+  osrm:
+    image: osrm/osrm-backend:latest
+    container_name: hyperlocal-osrm
+    volumes:
+      - ./osm-data:/data
+    command: |
+      sh -c "
+      if [ ! -f /data/jabodetabek.osrm ]; then
+        echo '🔄 Ekstrak graph sepeda...'
+        osrm-extract -p /opt/bicycle.lua /data/jabodetabek.osm.pbf &&
+        osrm-partition /data/jabodetabek.osrm &&
+        osrm-customize /data/jabodetabek.osrm
+      fi &&
+      echo '🚀 OSRM Menyala!' &&
+      osrm-routed --algorithm mld /data/jabodetabek.osrm
+      "
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  # 5. Nominatim (Geocoding)
+  nominatim:
+    image: mediagis/nominatim:4.2
+    container_name: hyperlocal-nominatim
+    environment:
+      - PBF_PATH=/data/jabodetabek.osm.pbf
+      - REPLICATION_URL=
+      - THREADS=4
+    volumes:
+      - ./osm-data:/data
+      - nominatim-pg-data:/var/lib/postgresql/14/main
+    ports:
+      - "7070:8080"
+    restart: unless-stopped
+
+  # 6. TileServer GL (Visual Peta)
+  tileserver:
+    image: maptiler/tileserver-gl:latest
+    container_name: hyperlocal-tileserver
+    volumes:
+      - ./tileserver-data:/data
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
+
+volumes:
+  pg-data:
+  redis-data:
+  minio-data:
+  nominatim-pg-data:
