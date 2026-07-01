@@ -1,0 +1,165 @@
+services:
+  # ==========================================
+  # INIT CONTAINER
+  # ==========================================
+  minio-init:
+    image: minio/mc:latest
+    container_name: hyperlocal-minio-init
+    profiles: ["core"] # <-- TAMBAHKAN INI
+    depends_on:
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo '⏳ Waiting for MinIO to be fully ready...';
+      sleep 3;
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      echo '🪣 Creating buckets...';
+      mc mb --ignore-existing local/chat-attachments;
+      mc mb --ignore-existing local/profile-photos;
+      mc mb --ignore-existing local/dispute-attachments;
+      echo '⏳ Setting Lifecycle Policies...';
+      mc ilm rule add --expiry-days 90 local/chat-attachments;
+      mc ilm rule add --expiry-days 30 local/profile-photos;
+      mc ilm rule add --expiry-days 90 local/dispute-attachments;
+      echo '🔔 Configuring MinIO Bucket Notification to Redis...';
+      mc admin config set local notify_redis:chat-events address=\"redis:6379\" key=\"minio-chat-events\" format=\"namespace\";
+      mc admin service restart local --json || true;
+      sleep 2;
+      mc event add local/chat-attachments arn:minio:sqs::chat-events:redis --event put;
+      echo '✅ MinIO initialization complete!';
+      "
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-hyperlocal}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-hyperlocal_secret123}
+
+  # ==========================================
+  # CORE INFRASTRUCTURE (Profil: core)
+  # ==========================================
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: hyperlocal-postgres
+    profiles: ["core"] # <-- TAMBAHKAN INI
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hyperlocal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hyperlocal_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-hyperlocal}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hyperlocal}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hyperlocal-redis
+    profiles: ["core"] # <-- TAMBAHKAN INI
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: hyperlocal-minio
+    profiles: ["core"] # <-- TAMBAHKAN INI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-hyperlocal}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-hyperlocal_secret123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # MAPS & GEOSPATIAL (Profil: maps)
+  # ==========================================
+  osrm:
+    image: osrm/osrm-backend:latest
+    container_name: hyperlocal-osrm
+    profiles: ["maps"] # <-- TAMBAHKAN INI
+    volumes:
+      - ./osm-data:/data
+    command: >
+      sh -c "
+      if [ ! -f /data/jabodetabek.osrm ]; then
+        echo '🔄 Extracting bicycle graph from jabodetabek.osm.pbf...';
+        osrm-extract -p /opt/bicycle.lua /data/jabodetabek.osm.pbf &&
+        osrm-partition /data/jabodetabek.osrm &&
+        osrm-customize /data/jabodetabek.osrm;
+      fi &&
+      echo '🚀 OSRM ready!' &&
+      osrm-routed --algorithm mld /data/jabodetabek.osrm
+      "
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  nominatim:
+    image: mediagis/nominatim:4.2
+    container_name: hyperlocal-nominatim
+    profiles: ["maps"] # <-- TAMBAHKAN INI
+    environment:
+      - PBF_PATH=/data/jabodetabek.osm.pbf
+      - REPLICATION_URL=
+      - THREADS=4
+    volumes:
+      - ./osm-data:/data
+      - nominatim-pg-data:/var/lib/postgresql/14/main
+    ports:
+      - "7070:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/status.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10m
+
+  tileserver:
+    image: maptiler/tileserver-gl:latest
+    container_name: hyperlocal-tileserver
+    profiles: ["maps"] # <-- TAMBAHKAN INI
+    volumes:
+      - ./tileserver-data:/data
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pg-data:
+  redis-data:
+  minio-data:
+  nominatim-pg-data:
