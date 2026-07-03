@@ -21,16 +21,25 @@ services:
       mc mb --ignore-existing local/profile-photos;
       mc mb --ignore-existing local/dispute-attachments;
       echo '⏳ Setting Lifecycle Policies...';
-      mc ilm rule add --expiry-days 90 local/chat-attachments;
-      mc ilm rule add --expiry-days 30 local/profile-photos;
-      mc ilm rule add --expiry-days 90 local/dispute-attachments;
+      # [FIX] Tambahkan --force agar tidak error saat menghapus semua rule
+      mc ilm rm --all --force local/chat-attachments || true;
+      mc ilm rm --all --force local/profile-photos || true;
+      mc ilm rm --all --force local/dispute-attachments || true;
+      
+      mc ilm add --expiry-days 90 local/chat-attachments;
+      mc ilm add --expiry-days 30 local/profile-photos;
+      mc ilm add --expiry-days 90 local/dispute-attachments;
       echo '🔔 Configuring MinIO Bucket Notification to Redis...';
       mc admin config set local notify_redis:chat-events address=\"redis:6379\" key=\"minio-chat-events\" format=\"namespace\";
       mc admin service restart local --json || true;
-      sleep 2;
+      
+      echo '⏳ Waiting for MinIO to come back online...';
+      for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do if mc admin info local > /dev/null 2>&1; then echo '✅ MinIO is back online!'; break; fi; sleep 1; done;
+      
+      mc event remove --force local/chat-attachments || true;
       mc event add local/chat-attachments arn:minio:sqs::chat-events:redis --event put;
-      echo '✅ MinIO initialization complete!';
-      "
+      
+      echo '✅ MinIO initialization complete!';      "
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-hyperlocal}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-hyperlocal_secret123}

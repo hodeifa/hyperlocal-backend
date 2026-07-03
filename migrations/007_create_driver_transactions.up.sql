@@ -14,7 +14,7 @@ CREATE TYPE transaction_type AS ENUM (
 CREATE TABLE driver_transactions (
     id                UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
     driver_id         UUID          NOT NULL REFERENCES drivers(id),
-    order_id          UUID          REFERENCES orders(id),          -- FK ke orders — diisi jika DEDUCTION
+    order_id          UUID,          -- FK ke orders — diisi jika DEDUCTION
     topup_request_id  UUID          REFERENCES driver_topup_requests(id),  -- diisi jika TOP_UP
     amount            DECIMAL(12,2) NOT NULL CHECK (amount > 0),
     type              transaction_type NOT NULL,
