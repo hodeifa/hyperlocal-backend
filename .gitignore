@@ -4,3 +4,6 @@
 osm-data/
 tileserver-data/
 nominatim-pg-data/
+.env
+*.log
+bin/
