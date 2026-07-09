@@ -13,7 +13,7 @@ run:
   go: "1.22"
   
   # Folder yang di-skip (jangan di-lint)
-  skip-dirs:
+  exclude-dirs:
     - migrations           # SQL files, bukan Go
     - proto                # Generated protobuf files
     - vendor               # Dependencies
@@ -22,7 +22,7 @@ run:
     - docs                 # Documentation
   
   # File yang di-skip
-  skip-files:
+  exclude-files:
     - ".*\\.pb\\.go$"           # Generated protobuf
     - ".*_grpc\\.pb\\.go$"      # Generated gRPC
     - ".*_mock\\.go$"           # Generated mocks
