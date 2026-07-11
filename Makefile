@@ -99,3 +99,7 @@ lint:
 		(cd $$mod && golangci-lint run ./...) || exit 1; \
 	done
 	@echo "✅ All modules passed linting!"
+
+test:
+	@echo "Running tests with race detector..."
+	go test -race -coverprofile=coverage.out ./...	

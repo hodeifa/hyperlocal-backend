@@ -1,13 +1,13 @@
-go 1.22
+go 1.25.0
 
 use (
-    ./api-gateway
-    ./pkg
-    ./services/location
-    ./services/order
-    ./services/customer
-    ./services/driver
-    ./services/chat
-    ./services/chat-worker
-    ./services/map
+	./api-gateway
+	./pkg
+	./services/chat
+	./services/chat-worker
+	./services/customer
+	./services/driver
+	./services/location
+	./services/map
+	./services/order
 )
