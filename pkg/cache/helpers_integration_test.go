@@ -3,55 +3,51 @@
 package cache
 
 import (
-	"context"
-	"net/url"
-	"testing"
-	"time"
+    "context"
+    "net/url"
+    "testing"
+    "time"
 
-	"github.com/redis/go-redis/v9"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
+    "github.com/redis/go-redis/v9"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
+    tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 func setupTestRedisIntegration(t *testing.T) *Client {
-	ctx := context.Background()
-	
-	// [FIX] Menggunakan API v0.31.0: RunContainer (bukan Run yang baru ada di v0.32.0)
-	// Image dipassing lewat testcontainers.WithImage, bukan argumen posisi kedua.
-	redisContainer, err := tcredis.RunContainer(ctx,
-		testcontainers.WithImage("redis:7-alpine"),
-	)
-	require.NoError(t, err, "Failed to start Redis container. Is Docker running?")
+    ctx := context.Background()
+    
+    // Menggunakan API v0.43.0: Run (bukan RunContainer)
+    redisContainer, err := tcredis.Run(ctx, "redis:7-alpine")
+    require.NoError(t, err, "Failed to start Redis container. Is Docker running?")
 
-	t.Cleanup(func() {
-		_ = redisContainer.Terminate(ctx)
-	})
+    t.Cleanup(func() {
+        _ = redisContainer.Terminate(ctx)
+    })
 
-	// Mendapatkan connection string (format: "redis://localhost:xxxxx")
-	connStr, err := redisContainer.ConnectionString(ctx)
-	require.NoError(t, err)
+    connStr, err := redisContainer.ConnectionString(ctx)
+    require.NoError(t, err)
 
-	// Parse URL untuk mengambil Host dan Port agar sesuai dengan struct Config kita
-	u, err := url.Parse(connStr)
-	require.NoError(t, err)
+    u, err := url.Parse(connStr)
+    require.NoError(t, err)
 
-	client, err := NewClient(Config{
-		Host:         u.Hostname(),
-		Port:         u.Port(),
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-	})
-	require.NoError(t, err)
+    client, err := NewClient(Config{
+        Host:         u.Hostname(),
+        Port:         u.Port(),
+        DialTimeout:  5 * time.Second,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 5 * time.Second,
+    })
+    require.NoError(t, err)
 
-	t.Cleanup(func() {
-		_ = client.Close()
-	})
+    t.Cleanup(func() {
+        _ = client.Close()
+    })
 
-	return client
+    return client
 }
+
+// ... TestGeoAddAndGeoRadius_Integration tetap sama
 
 func TestGeoAddAndGeoRadius_Integration(t *testing.T) {
 	client := setupTestRedisIntegration(t)
