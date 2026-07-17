@@ -1,3 +1,4 @@
+// Package storage provides an abstraction for object storage using MinIO SDK.
 package storage
 
 import (
@@ -18,7 +19,7 @@ type Storage interface {
 	DeleteFile(ctx context.Context, path string) error
 }
 
-// MinioStorage adalah implementasi dari interface Storage menggunakan MinIO SDK.
+// MinioStorage adalah implementation dari interface Storage menggunakan MinIO SDK.
 type MinioStorage struct {
 	client *minio.Client
 	bucket string
@@ -26,6 +27,8 @@ type MinioStorage struct {
 
 // Config menyimpan konfigurasi yang dibutuhkan untuk koneksi ke MinIO.
 // Nilai ini wajib diambil dari environment variable, bukan di-hardcode.
+//
+//nolint:govet // fieldalignment is ignored for readability
 type Config struct {
 	Endpoint        string
 	AccessKeyID     string
@@ -49,7 +52,7 @@ func NewMinioStorage(cfg Config) (Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gagal mengecek eksistensi bucket: %w", err)
 	}
-	
+
 	// Membuat bucket jika belum ada (berguna untuk setup lokal/dev).
 	// Di production, bucket sebaiknya dibuat via Infrastructure-as-Code (Terraform/CI).
 	if !exists {
@@ -66,7 +69,7 @@ func NewMinioStorage(cfg Config) (Storage, error) {
 }
 
 // UploadFile mengunggah file ke MinIO dan mengembalikan ETag.
-// ETag WAJIB dikembalikan untuk mendukung Saga Pattern (compensating transaction) 
+// ETag WAJIB dikembalikan untuk mendukung Saga Pattern (compensating transaction)
 // di Chat Service dan Dispute Service (technical-strategies.md §16).
 func (m *MinioStorage) UploadFile(ctx context.Context, path string, reader io.Reader, size int64, mimeType string) (string, error) {
 	info, err := m.client.PutObject(ctx, m.bucket, path, reader, size, minio.PutObjectOptions{
@@ -82,12 +85,12 @@ func (m *MinioStorage) UploadFile(ctx context.Context, path string, reader io.Re
 // Mengembalikan expiresAt dalam UTC untuk mencegah bug zona waktu.
 func (m *MinioStorage) GeneratePresignedURL(path string, expiry time.Duration) (string, time.Time, error) {
 	now := time.Now().UTC() // Capture waktu SEBELUM komputasi/network MinIO
-	
+
 	u, err := m.client.PresignedGetObject(context.Background(), m.bucket, path, expiry, nil)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("gagal membuat presigned url: %w", err)
 	}
-	
+
 	expiresAt := now.Add(expiry)
 	return u.String(), expiresAt, nil
 }

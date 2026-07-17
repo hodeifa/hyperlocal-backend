@@ -1,3 +1,4 @@
+// Package cache provides a Redis client wrapper and helper functions.
 package cache
 
 import (
@@ -23,7 +24,7 @@ type Cache interface {
 	Ping(ctx context.Context) error
 }
 
-// Client adalah implementasi konkret dari Cache.
+// Client adalah implementation konkret dari Cache.
 type Client struct {
 	rdb *redis.Client
 }
@@ -31,7 +32,9 @@ type Client struct {
 // Compile-time check
 var _ Cache = (*Client)(nil)
 
-// NewClient membuat koneksi Redis dan memverifikasinya (fail-fast).
+// NewClient Config is passed by value intentionally
+//
+//nolint:gocritic
 func NewClient(cfg Config) (*Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         cfg.Addr(),
@@ -64,8 +67,8 @@ func (c *Client) Ping(ctx context.Context) error {
 	return c.rdb.Ping(ctx).Err()
 }
 
-// GetRedisClient adalah escape hatch untuk command Redis yang belum di-wrap 
-// (misal: Incr, SetNX, ZRem, Pub/Sub). Usecase yang butuh ini harus depend 
+// GetRedisClient adalah escape hatch untuk command Redis yang belum di-wrap
+// (misal: Incr, SetNX, ZRem, Pub/Sub). Usecase yang butuh ini harus depend
 // ke *cache.Client secara langsung, bukan ke interface Cache.
 func (c *Client) GetRedisClient() *redis.Client {
 	return c.rdb

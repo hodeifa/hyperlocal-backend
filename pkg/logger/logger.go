@@ -1,3 +1,4 @@
+// Package logger provides structured logging configurations and wrappers.
 package logger
 
 import (
@@ -8,7 +9,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Config memegang konfigurasi untuk inisialisasi Logger.
+// Config defines the configuration for the logger.
+//
+//nolint:govet // fieldalignment is ignored for readability
 type Config struct {
 	ServiceName  string
 	IsProduction bool

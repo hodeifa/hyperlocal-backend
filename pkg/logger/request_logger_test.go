@@ -2,6 +2,7 @@ package logger_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,7 @@ import (
 func TestRequestLoggerMiddleware_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	buf := &bytes.Buffer{}
-	
+
 	log := logger.NewLogger(logger.Config{
 		ServiceName:  "integration-test",
 		IsProduction: true,
@@ -38,7 +39,7 @@ func TestRequestLoggerMiddleware_Integration(t *testing.T) {
 	})
 
 	// Simulasi Request dari Flutter
-	req, _ := http.NewRequest("GET", "/test", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/test", http.NoBody)
 	req.Header.Set("X-App-Version", "1.2.0")
 	req.Header.Set("X-Platform", "android")
 	req.Header.Set("X-OS-Version", "14")

@@ -34,6 +34,7 @@ curl -i "http://localhost:8080/v1/ws/driver/location?token=<YOUR_CUSTOMER_TOKEN>
 curl -i "http://localhost:8080/v1/ws/chat/order-999?token=<YOUR_CUSTOMER_TOKEN>"
 */
 
+// Package main is the entry point for the API Gateway logger testing.
 package main
 
 import (
@@ -75,21 +76,21 @@ func main() {
 	// 2. Public Routes (No Auth)
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message":      "pong",
-			"timestamp":    time.Now().Format(time.RFC3339),
-			"request_id":   c.GetString("request_id"),
-			"app_version":  c.GetString(middleware.CtxAppVersion),
-			"platform":     middleware.GetPlatform(c),
-			"os_version":   c.GetString(middleware.CtxOSVersion),
-			"build_type":   c.GetString(middleware.CtxBuildType),
-			"is_debug":     middleware.IsDebugBuild(c),
+			"message":     "pong",
+			"timestamp":   time.Now().Format(time.RFC3339),
+			"request_id":  c.GetString("request_id"),
+			"app_version": c.GetString(middleware.CtxAppVersion),
+			"platform":    middleware.GetPlatform(c),
+			"os_version":  c.GetString(middleware.CtxOSVersion),
+			"build_type":  c.GetString(middleware.CtxBuildType),
+			"is_debug":    middleware.IsDebugBuild(c),
 		})
 	})
 
 	r.GET("/slow", func(c *gin.Context) {
 		time.Sleep(2 * time.Second)
 		c.JSON(http.StatusOK, gin.H{
-			"message": "slow response completed",
+			"message":  "slow response completed",
 			"platform": middleware.GetPlatform(c),
 		})
 	})
@@ -97,77 +98,75 @@ func main() {
 	// 3. REST API Routes (JWT Auth Required)
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.JWTAuthMiddleware(jwtSecret))
-	{
-		apiV1.GET("/orders/history", func(c *gin.Context) {
-			userID := c.GetString(middleware.CtxUserID)
-			role := c.GetString(middleware.CtxRole)
-			
-			c.JSON(http.StatusOK, gin.H{
-				"message": "order history",
-				"user_id": userID,
-				"role":    role,
-				"orders": []gin.H{
-					{"id": "order-1", "status": "COMPLETED"},
-					{"id": "order-2", "status": "IN_PROGRESS"},
-				},
-			})
-		})
 
-		apiV1.GET("/profile", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"user_id": c.GetString(middleware.CtxUserID),
-				"role":    c.GetString(middleware.CtxRole),
-			})
+	apiV1.GET("/orders/history", func(c *gin.Context) {
+		userID := c.GetString(middleware.CtxUserID)
+		role := c.GetString(middleware.CtxRole)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "order history",
+			"user_id": userID,
+			"role":    role,
+			"orders": []gin.H{
+				{"id": "order-1", "status": "COMPLETED"},
+				{"id": "order-2", "status": "IN_PROGRESS"},
+			},
 		})
-	}
+	})
+
+	apiV1.GET("/profile", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"user_id": c.GetString(middleware.CtxUserID),
+			"role":    c.GetString(middleware.CtxRole),
+		})
+	})
 
 	// 4. WebSocket Routes (JWT via Query Param)
 	wsGroup := r.Group("/v1/ws")
-	{
-		// Chat - Both customer and driver allowed
-		wsGroup.GET("/chat/:order_id",
-			middleware.WSAuthMiddleware(jwtSecret),
-			middleware.OrderParticipantGuard(mockParticipantChecker),
-			func(c *gin.Context) {
-				orderID := c.Param("order_id")
-				userID := c.GetString(middleware.CtxUserID)
-				role := c.GetString(middleware.CtxRole)
-				
-				c.JSON(http.StatusOK, gin.H{
-					"message":  "WebSocket chat handshake successful",
-					"order_id": orderID,
-					"user_id":  userID,
-					"role":     role,
-					"note":     "In production, this would upgrade to WebSocket connection",
-				})
-			},
-		)
 
-		// Driver Location - Driver only
-		wsGroup.GET("/driver/location",
-			middleware.WSAuthMiddleware(jwtSecret, "driver"),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"message": "Driver location WebSocket ready",
-					"user_id": c.GetString(middleware.CtxUserID),
-					"role":    c.GetString(middleware.CtxRole),
-				})
-			},
-		)
+	// Chat - Both customer and driver allowed
+	wsGroup.GET("/chat/:order_id",
+		middleware.WSAuthMiddleware(jwtSecret),
+		middleware.OrderParticipantGuard(mockParticipantChecker),
+		func(c *gin.Context) {
+			orderID := c.Param("order_id")
+			userID := c.GetString(middleware.CtxUserID)
+			role := c.GetString(middleware.CtxRole)
 
-		// Customer Tracking - Customer only
-		wsGroup.GET("/customer/tracking/:order_id",
-			middleware.WSAuthMiddleware(jwtSecret, "customer"),
-			middleware.OrderParticipantGuard(mockParticipantChecker),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"message":  "Customer tracking WebSocket ready",
-					"order_id": c.Param("order_id"),
-					"user_id":  c.GetString(middleware.CtxUserID),
-				})
-			},
-		)
-	}
+			c.JSON(http.StatusOK, gin.H{
+				"message":  "WebSocket chat handshake successful",
+				"order_id": orderID,
+				"user_id":  userID,
+				"role":     role,
+				"note":     "In production, this would upgrade to WebSocket connection",
+			})
+		},
+	)
+
+	// Driver Location - Driver only
+	wsGroup.GET("/driver/location",
+		middleware.WSAuthMiddleware(jwtSecret, "driver"),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Driver location WebSocket ready",
+				"user_id": c.GetString(middleware.CtxUserID),
+				"role":    c.GetString(middleware.CtxRole),
+			})
+		},
+	)
+
+	// Customer Tracking - Customer only
+	wsGroup.GET("/customer/tracking/:order_id",
+		middleware.WSAuthMiddleware(jwtSecret, "customer"),
+		middleware.OrderParticipantGuard(mockParticipantChecker),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"message":  "Customer tracking WebSocket ready",
+				"order_id": c.Param("order_id"),
+				"user_id":  c.GetString(middleware.CtxUserID),
+			})
+		},
+	)
 
 	// Start server
 	port := os.Getenv("PORT")
@@ -181,7 +180,7 @@ func main() {
 	log.Printf("   GET  /api/v1/orders/history - Protected REST endpoint")
 	log.Printf("   GET  /v1/ws/chat/:order_id?token=JWT - WebSocket chat")
 	log.Printf("   GET  /v1/ws/driver/location?token=JWT - Driver location (driver only)")
-	
+
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
@@ -191,19 +190,19 @@ func main() {
 func mockParticipantChecker(ctx context.Context, userID, role, orderID string) (bool, error) {
 	// Simulate: customer-123 and driver-456 are participants of order-123
 	// All other combinations are not participants
-	
+
 	if orderID == "order-123" {
 		if (userID == "customer-123" && role == "customer") ||
-		   (userID == "driver-456" && role == "driver") {
+			(userID == "driver-456" && role == "driver") {
 			return true, nil
 		}
 	}
-	
+
 	// Simulate DB error for order-999
 	if orderID == "order-999" {
 		return false, context.DeadlineExceeded
 	}
-	
+
 	// Not a participant
 	return false, nil
 }
