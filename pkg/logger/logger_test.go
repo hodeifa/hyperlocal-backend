@@ -18,7 +18,7 @@ import (
 // oleh banyak goroutine secara bersamaan tanpa menghasilkan log yang tercampur (interleaved).
 func TestNewLogger_ConcurrentSafety(t *testing.T) {
 	buf := &bytes.Buffer{}
-	
+
 	cfg := logger.Config{
 		ServiceName:  "test-service",
 		IsProduction: true, // Memaksa JSON Encoder
@@ -37,10 +37,10 @@ func TestNewLogger_ConcurrentSafety(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			for j := 0; j < iterations; j++ {
-				log.Info("concurrent_event", 
-                    zap.Int("goroutine_id", id), 
-                    zap.Int("iteration", j),
-                )
+				log.Info("concurrent_event",
+					zap.Int("goroutine_id", id),
+					zap.Int("iteration", j),
+				)
 			}
 		}(i)
 	}
@@ -54,13 +54,13 @@ func TestNewLogger_ConcurrentSafety(t *testing.T) {
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		var logOutput map[string]interface{}
-		
+
 		err := json.Unmarshal(line, &logOutput)
 		assert.NoError(t, err, "Baris log korup/tercampur (race condition): %s", string(line))
 		assert.Equal(t, "test-service", logOutput["service_name"])
 		lineCount++
 	}
-	
+
 	assert.NoError(t, scanner.Err())
 	assert.Equal(t, goroutines*iterations, lineCount, "Jumlah baris log harus persis sama dengan total write")
 }

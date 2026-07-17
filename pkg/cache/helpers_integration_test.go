@@ -3,48 +3,48 @@
 package cache
 
 import (
-    "context"
-    "net/url"
-    "testing"
-    "time"
+	"context"
+	"net/url"
+	"testing"
+	"time"
 
-    "github.com/redis/go-redis/v9"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
-    tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 func setupTestRedisIntegration(t *testing.T) *Client {
-    ctx := context.Background()
-    
-    // Menggunakan API v0.43.0: Run (bukan RunContainer)
-    redisContainer, err := tcredis.Run(ctx, "redis:7-alpine")
-    require.NoError(t, err, "Failed to start Redis container. Is Docker running?")
+	ctx := context.Background()
 
-    t.Cleanup(func() {
-        _ = redisContainer.Terminate(ctx)
-    })
+	// Menggunakan API v0.43.0: Run (bukan RunContainer)
+	redisContainer, err := tcredis.Run(ctx, "redis:7-alpine")
+	require.NoError(t, err, "Failed to start Redis container. Is Docker running?")
 
-    connStr, err := redisContainer.ConnectionString(ctx)
-    require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = redisContainer.Terminate(ctx)
+	})
 
-    u, err := url.Parse(connStr)
-    require.NoError(t, err)
+	connStr, err := redisContainer.ConnectionString(ctx)
+	require.NoError(t, err)
 
-    client, err := NewClient(Config{
-        Host:         u.Hostname(),
-        Port:         u.Port(),
-        DialTimeout:  5 * time.Second,
-        ReadTimeout:  5 * time.Second,
-        WriteTimeout: 5 * time.Second,
-    })
-    require.NoError(t, err)
+	u, err := url.Parse(connStr)
+	require.NoError(t, err)
 
-    t.Cleanup(func() {
-        _ = client.Close()
-    })
+	client, err := NewClient(Config{
+		Host:         u.Hostname(),
+		Port:         u.Port(),
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	})
+	require.NoError(t, err)
 
-    return client
+	t.Cleanup(func() {
+		_ = client.Close()
+	})
+
+	return client
 }
 
 // ... TestGeoAddAndGeoRadius_Integration tetap sama
@@ -69,7 +69,7 @@ func TestGeoAddAndGeoRadius_Integration(t *testing.T) {
 	for _, loc := range locations {
 		assert.NotEmpty(t, loc.Name)
 		assert.True(t, loc.Dist >= 0)
-		
+
 		// Assertion float64 yang valid
 		if loc.Name == "driver_1" {
 			assert.InDelta(t, 106.8228, loc.Longitude, 0.0001)

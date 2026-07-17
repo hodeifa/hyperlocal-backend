@@ -1,3 +1,4 @@
+// Package database provides PostgreSQL connection management and transaction helpers.
 package database
 
 import (
@@ -92,7 +93,7 @@ func (db *DB) WithTx(ctx context.Context, fn TxFunc) (err error) {
 	}
 
 	// TANPA SYARAT: Rollback aman dipanggil meski tx sudah di-Commit (akan return pgx.ErrTxClosed).
-	// Jika fn(tx) panic, "err = fn(tx)" tidak pernah selesai, err tetap nil, dan defer bersyarat 
+	// Jika fn(tx) panic, "err = fn(tx)" tidak pernah selesai, err tetap nil, dan defer bersyarat
 	// tidak akan pernah ke-trigger. Pola unconditional defer ini mencegah connection leak.
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) {
@@ -100,8 +101,9 @@ func (db *DB) WithTx(ctx context.Context, fn TxFunc) (err error) {
 		}
 	}()
 
-	if err = fn(tx); err != nil {
-		return err
+	//nolint:gocritic
+	if tmpErr := fn(tx); tmpErr != nil {
+		return tmpErr
 	}
 
 	if err = tx.Commit(ctx); err != nil {

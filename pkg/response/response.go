@@ -1,3 +1,4 @@
+// Package response provides helper functions to format standard JSON HTTP responses.
 package response
 
 import (
@@ -6,7 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Response adalah struktur standar JSON untuk semua respons API di sistem ini.
+// Response defines the standard structure for JSON responses.
+//
+//nolint:govet // fieldalignment is ignored for readability
 type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message,omitempty"`
@@ -33,7 +36,7 @@ func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 }
 
 // Error mengirimkan respons error standar.
-func Error(c *gin.Context, statusCode int, message string, err string) {
+func Error(c *gin.Context, statusCode int, message, err string) {
 	c.JSON(statusCode, Response{
 		Success: false,
 		Message: message,

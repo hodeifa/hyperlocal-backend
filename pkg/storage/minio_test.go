@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockStorage adalah implementasi mock dari interface Storage untuk unit test murni.
+// MockStorage adalah implementation mock dari interface Storage untuk unit test murni.
 // Memastikan service lain (seperti Chat Service) dapat diuji tanpa membutuhkan instance MinIO asli.
 type MockStorage struct {
 	mock.Mock
@@ -59,7 +59,7 @@ func TestStorageContract_UnitTest(t *testing.T) {
 
 	// 1. Skenario Positif: Upload File (Wajib return ETag)
 	mockStore.On("UploadFile", ctx, path, mock.Anything, int64(len(content)), "text/plain").Return(expectedEtag, nil)
-	
+
 	etag, err := mockStore.UploadFile(ctx, path, reader, int64(len(content)), "text/plain")
 	require.NoError(t, err)
 	assert.Equal(t, expectedEtag, etag, "ETag WAJIB dikembalikan untuk compensating transaction (Saga Pattern)")
@@ -76,7 +76,7 @@ func TestStorageContract_UnitTest(t *testing.T) {
 
 	// 3. Skenario Positif: Delete File (Compensating Transaction)
 	mockStore.On("DeleteFile", ctx, path).Return(nil)
-	
+
 	err = mockStore.DeleteFile(ctx, path)
 	require.NoError(t, err)
 
@@ -86,5 +86,5 @@ func TestStorageContract_UnitTest(t *testing.T) {
 // TestMinioStorage_Integration (Tetap dipertahankan dari kode sebelumnya)
 // Akan otomatis di-SKIP jika env var MinIO tidak diset / server tidak reachable.
 func TestMinioStorage_Integration(t *testing.T) {
-    // ... (kode integration test sebelumnya) ...
+	// ... (kode integration test sebelumnya) ...
 }

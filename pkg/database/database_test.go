@@ -25,8 +25,8 @@ func TestWithTx_RollbackOnError(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer func() {
-		err := pgContainer.Terminate(ctx)
-		require.NoError(t, err)
+		termErr := pgContainer.Terminate(ctx)
+		require.NoError(t, termErr)
 	}()
 
 	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
@@ -47,9 +47,9 @@ func TestWithTx_RollbackOnError(t *testing.T) {
 	// Test 1: Rollback on error
 	dummyErr := errors.New("dummy error")
 	err = db.WithTx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('should be rolled back');`)
-		if err != nil {
-			return err
+		_, execErr := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('should be rolled back');`)
+		if execErr != nil {
+			return execErr
 		}
 		return dummyErr // Return error to trigger rollback
 	})
@@ -63,8 +63,8 @@ func TestWithTx_RollbackOnError(t *testing.T) {
 
 	// Test 2: Commit on success
 	err = db.WithTx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('should be committed');`)
-		return err
+		_, execErr := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('should be committed');`)
+		return execErr
 	})
 	assert.NoError(t, err)
 
@@ -86,8 +86,8 @@ func TestWithTx_RollbackOnPanic(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer func() {
-		err := pgContainer.Terminate(ctx)
-		require.NoError(t, err)
+		termErr := pgContainer.Terminate(ctx)
+		require.NoError(t, termErr)
 	}()
 
 	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
@@ -114,9 +114,9 @@ func TestWithTx_RollbackOnPanic(t *testing.T) {
 		}()
 
 		_ = db.WithTx(ctx, func(tx pgx.Tx) error {
-			_, err := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('should be rolled back on panic');`)
-			if err != nil {
-				return err
+			_, execErr := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('should be rolled back on panic');`)
+			if execErr != nil {
+				return execErr
 			}
 			panic("intentional panic") // Trigger panic
 		})
@@ -147,8 +147,8 @@ func TestWithTx_RollbackOnConstraintViolation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer func() {
-		err := pgContainer.Terminate(ctx)
-		require.NoError(t, err)
+		termErr := pgContainer.Terminate(ctx)
+		require.NoError(t, termErr)
 	}()
 
 	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
@@ -174,14 +174,14 @@ func TestWithTx_RollbackOnConstraintViolation(t *testing.T) {
 	// Test: Rollback when second operation fails due to constraint violation
 	err = db.WithTx(ctx, func(tx pgx.Tx) error {
 		// First operation succeeds
-		_, err := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('first_value');`)
-		if err != nil {
-			return err
+		_, execErr := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('first_value');`)
+		if execErr != nil {
+			return execErr
 		}
 
 		// Second operation fails due to unique constraint violation
-		_, err = tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('first_value');`)
-		return err
+		_, execErr = tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('first_value');`)
+		return execErr
 	})
 	assert.Error(t, err, "Transaction should fail due to constraint violation")
 
@@ -193,8 +193,8 @@ func TestWithTx_RollbackOnConstraintViolation(t *testing.T) {
 
 	// Verify we can insert the value now (proves rollback was complete)
 	err = db.WithTx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('first_value');`)
-		return err
+		_, execErr := tx.Exec(ctx, `INSERT INTO test_table (value) VALUES ('first_value');`)
+		return execErr
 	})
 	assert.NoError(t, err, "Should be able to insert value after rollback")
 
@@ -205,7 +205,7 @@ func TestWithTx_RollbackOnConstraintViolation(t *testing.T) {
 
 func TestNew_NilLogger(t *testing.T) {
 	ctx := context.Background()
-	
+
 	pgContainer, err := postgres.Run(ctx,
 		"postgres:16-alpine",
 		postgres.WithDatabase("testdb"),
@@ -215,8 +215,8 @@ func TestNew_NilLogger(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer func() {
-		err := pgContainer.Terminate(ctx)
-		require.NoError(t, err)
+		termErr := pgContainer.Terminate(ctx)
+		require.NoError(t, termErr)
 	}()
 
 	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
@@ -226,6 +226,6 @@ func TestNew_NilLogger(t *testing.T) {
 	db, err := database.New(ctx, database.Config{URL: connStr}, nil)
 	require.NoError(t, err, "New() should not panic or fail when logger is nil")
 	defer db.Close()
-	
+
 	assert.NotNil(t, db.Pool)
 }

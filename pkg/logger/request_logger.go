@@ -25,7 +25,7 @@ func RequestLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 			zap.String("path", c.Request.URL.Path),
 			zap.Int("status", c.Writer.Status()),
 			zap.Int64("duration_ms", time.Since(start).Milliseconds()),
-			
+
 			// Client Info (Sinkron dengan KB §15)
 			zap.String("app_version", c.GetString(middleware.CtxAppVersion)),
 			zap.String("platform", c.GetString(middleware.CtxPlatform)),

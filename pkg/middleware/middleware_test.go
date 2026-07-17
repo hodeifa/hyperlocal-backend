@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/stretchr/testify/assert"
 	"github.com/hodeifa/hyperlocal-backend/pkg/middleware"
+	"github.com/stretchr/testify/assert"
 )
 
 func generateTestJWT(userID, role, secret string) string {
@@ -26,6 +26,22 @@ func generateTestJWT(userID, role, secret string) string {
 	return tokenStr
 }
 
+func TestJWTAndRoleGuard(t *testing.T) {
+	// Setup router & middleware...
+
+	// Test 1: Customer akses route Customer (Should Pass)
+	custToken := generateTestJWT("cust-1", "customer", "test-secret")
+	req1, _ := http.NewRequestWithContext(context.Background(), "GET", "/api/v1/customer/profile", http.NoBody)
+	req1.Header.Set("Authorization", "Bearer "+custToken)
+	// ... assert 200 OK ...
+
+	// Test 2: Driver akses route Customer (Should Fail / 403 Forbidden)
+	driverToken := generateTestJWT("drv-1", "driver", "test-secret")
+	req2, _ := http.NewRequestWithContext(context.Background(), "GET", "/api/v1/customer/profile", http.NoBody)
+	req2.Header.Set("Authorization", "Bearer "+driverToken)
+	// ... assert 403 Forbidden ...
+}
+
 func TestAuthMiddlewares(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	secret := "test-secret"
@@ -35,7 +51,7 @@ func TestAuthMiddlewares(t *testing.T) {
 		r.Use(middleware.JWTAuthMiddleware(secret))
 		r.GET("/test", func(c *gin.Context) { c.Status(200) })
 
-		req, _ := http.NewRequest("GET", "/test", nil)
+		req, _ := http.NewRequestWithContext(context.Background(), "GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -47,7 +63,7 @@ func TestAuthMiddlewares(t *testing.T) {
 		r.Use(middleware.WSAuthMiddleware(secret))
 		r.GET("/ws", func(c *gin.Context) { c.Status(200) })
 
-		req, _ := http.NewRequest("GET", "/ws", nil)
+		req, _ := http.NewRequestWithContext(context.Background(), "GET", "/ws", http.NoBody)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -56,7 +72,7 @@ func TestAuthMiddlewares(t *testing.T) {
 
 	t.Run("WS Guard: Return 403 untuk user asing", func(t *testing.T) {
 		mockChecker := func(ctx context.Context, userID, role, orderID string) (bool, error) {
-			return false, nil 
+			return false, nil
 		}
 
 		r := gin.New()
@@ -68,7 +84,7 @@ func TestAuthMiddlewares(t *testing.T) {
 		r.Use(middleware.OrderParticipantGuard(mockChecker))
 		r.GET("/chat/:order_id", func(c *gin.Context) { c.Status(200) })
 
-		req, _ := http.NewRequest("GET", "/chat/order-123", nil)
+		req, _ := http.NewRequestWithContext(context.Background(), "GET", "/chat/order-123", http.NoBody)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 

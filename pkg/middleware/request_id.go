@@ -5,7 +5,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// CtxRequestID is the context key for the request ID.
 const CtxRequestID = "request_id"
+
+// HeaderRequestID is the HTTP header key for the request ID.
 const HeaderRequestID = "X-Request-ID"
 
 // RequestIDMiddleware menghasilkan UUID unik per request jika tidak ada di header.
@@ -16,13 +19,13 @@ func RequestIDMiddleware() gin.HandlerFunc {
 		if requestID == "" {
 			requestID = uuid.New().String()
 		}
-		
+
 		// Set ke context Gin (untuk dibaca oleh pkg/logger)
 		c.Set(CtxRequestID, requestID)
-		
+
 		// Set ke response header (agar client/frontend bisa mereferensikannya saat komplain)
 		c.Header(HeaderRequestID, requestID)
-		
+
 		c.Next()
 	}
 }

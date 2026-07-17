@@ -1,7 +1,9 @@
+// Package middleware provides HTTP middleware components for the API Gateway.
 package middleware
 
 import (
 	"strings"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,7 +23,7 @@ func ClientInfoMiddleware() gin.HandlerFunc {
 		if platform != "android" && platform != "ios" {
 			platform = "unknown"
 		}
-		
+
 		build := strings.ToLower(c.GetHeader("X-Build"))
 		if build != "debug" {
 			build = "release" // default ke release untuk keamanan
@@ -36,12 +38,13 @@ func ClientInfoMiddleware() gin.HandlerFunc {
 	}
 }
 
-// Helper functions (sesuai technical-strategies.md §15)
+// IsDebugBuild returns true if the request originates from a debug build.
 func IsDebugBuild(c *gin.Context) bool {
 	build, _ := c.Get(CtxBuildType)
 	return build == "debug"
 }
 
+// GetPlatform returns the client platform (e.g., "android", "ios", or "unknown").
 func GetPlatform(c *gin.Context) string {
 	if p, ok := c.Get(CtxPlatform); ok {
 		if s, ok := p.(string); ok {
