@@ -1,0 +1,23 @@
+mode: set
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:32.60,41.2 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:44.81,50.2 5 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:61.78,63.57 2 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:63.57,65.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:67.2,73.8 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:91.103,92.16 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:92.16,94.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:97.2,108.16 5 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:108.16,110.3 1 0
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:112.2,113.16 2 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:113.16,115.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:117.2,121.16 4 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:121.16,123.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:124.2,127.16 3 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:127.16,129.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:131.2,131.53 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:131.53,133.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:135.2,136.59 2 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:136.59,138.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:140.2,141.16 2 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:141.16,143.3 1 1
+github.com/hodeifa/hyperlocal-backend/pkg/vatopup/flip.go:145.2,150.8 1 1
