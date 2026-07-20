@@ -7,3 +7,5 @@ nominatim-pg-data/
 .env
 *.log
 bin/
+# Firebase Secrets
+secrets/*.json
