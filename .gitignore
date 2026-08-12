@@ -9,3 +9,5 @@ nominatim-pg-data/
 bin/
 # Firebase Secrets
 secrets/*.json
+secrets/
+*.json

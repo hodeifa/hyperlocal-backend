@@ -1,59 +1,56 @@
-// Package main is a CLI tool to verify FCM integration.
+// Package main provides a CLI tool to verify FCM setup locally without a database.
 package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/hodeifa/hyperlocal-backend/pkg/fcm"
-	"github.com/hodeifa/hyperlocal-backend/pkg/logger"
-	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap"
 )
 
 // mockFetcher implements fcm.TokenFetcher for CLI testing.
-type mockFetcher struct {
-	token string
+type mockFetcher struct{}
+
+// GetCustomerFCMToken returns an empty string for CLI mock.
+func (m *mockFetcher) GetCustomerFCMToken(ctx context.Context, id string) (string, error) {
+	return "", nil
 }
 
-func (m *mockFetcher) GetCustomerFCMToken(ctx context.Context, customerID string) (string, error) {
-	return m.token, nil
-}
-
-func (m *mockFetcher) GetDriverFCMToken(ctx context.Context, driverID string) (string, error) {
-	return m.token, nil
+// GetDriverFCMToken returns an empty string for CLI mock.
+func (m *mockFetcher) GetDriverFCMToken(ctx context.Context, id string) (string, error) {
+	return "", nil
 }
 
 func main() {
-	credFile := os.Getenv("FIREBASE_CREDENTIALS_FILE")
-	credJSON := os.Getenv("FIREBASE_CREDENTIALS_JSON")
-	testToken := os.Getenv("TEST_FCM_TOKEN")
+	logger, _ := zap.NewProduction()
 
-	if (credFile == "" && credJSON == "") || testToken == "" {
-		log.Fatal("FIREBASE_CREDENTIALS_FILE (atau _JSON) dan TEST_FCM_TOKEN wajib diset di .env")
+	token := os.Getenv("TEST_FCM_TOKEN")
+	if token == "" {
+		logger.Fatal("TEST_FCM_TOKEN environment variable is required")
 	}
 
-	cfg := logger.Config{
-		ServiceName:  "test-fcm",
-		IsProduction: false,
-		Level:        zapcore.InfoLevel,
-	}
-	zapLogger := logger.NewLogger(cfg)
-
-	fcmCfg := fcm.Config{
-		CredentialsFile: credFile,
-		CredentialsJSON: credJSON,
+	cfg := fcm.Config{
+		CredentialsFile: os.Getenv("FIREBASE_CREDENTIALS_FILE"),
+		CredentialsJSON: os.Getenv("FIREBASE_CREDENTIALS_JSON"),
 	}
 
-	client, err := fcm.NewClient(context.Background(), fcmCfg, &mockFetcher{token: testToken}, zapLogger)
+	ctx := context.Background()
+	client, err := fcm.NewClient(ctx, cfg, &mockFetcher{}, logger)
 	if err != nil {
-		log.Fatalf("Gagal inisialisasi FCM: %v", err)
+		logger.Fatal("Failed to init FCM client", zap.Error(err))
 	}
 
-	log.Println("Mengirim test notification ke driver...")
-	err = client.SendToDriver(context.Background(), "test-driver", "Hyperlocal Test", "Setup pkg/fcm berhasil!", "hmitra://home")
+	fmt.Println("🚀 Mengirim pesan test ke FCM...")
+	err = client.Send(ctx, token, "🔔 Sprint 3 Test", "Setup pkg/fcm berhasil!", map[string]string{
+		"deep_link": "hmitra://home",
+		"type":      "test",
+	})
+
 	if err != nil {
-		log.Fatalf("Gagal kirim: %v", err)
+		logger.Fatal("Gagal kirim", zap.Error(err))
 	}
-	log.Println("✅ Test notification terkirim! Cek device atau FCM Console.")
+
+	fmt.Println("✅ SUKSES! Cek FCM Console atau Device Anda.")
 }
