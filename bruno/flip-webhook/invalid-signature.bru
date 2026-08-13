@@ -1,0 +1,20 @@
+meta {
+  name: Flip Webhook - Invalid Signature (400)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/internal/flip/callback
+  body: raw
+  auth: none
+}
+
+body:raw {
+{"id":"evt_12345","bill_id":"topup-driver1-1718000000","amount":47500,"fee":2500,"status":"SUCCESSFUL"}
+}
+
+headers {
+  Content-Type: application/json
+  x-flip-signature: invalid_signature_12345
+}

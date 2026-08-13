@@ -1,152 +1,155 @@
-// Package vatopup implements the Provider interface for Flip Business, a virtual account provider in Indonesia.
 package vatopup
 
 import (
-	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 )
 
-// FlipProvider implements the Provider interface for Flip Business.
+// Compile-time check to ensure FlipProvider implements Provider
+var _ Provider = (*FlipProvider)(nil)
+
 type FlipProvider struct {
 	client    *http.Client
 	baseURL   string
 	apiKey    string
-	secretKey string
+	secretKey string // Untuk HMAC-SHA256 signature webhook & Basic Auth
 }
 
-// FlipProviderConfig holds configuration for FlipProvider.
-type FlipProviderConfig struct {
-	BaseURL   string
-	APIKey    string
-	SecretKey string
-}
-
-// NewFlipProvider creates a new instance of FlipProvider.
-func NewFlipProvider(cfg FlipProviderConfig) *FlipProvider {
+// NewFlipProvider menginisialisasi client Flip dengan timeout ketat 5 detik.
+func NewFlipProvider(baseURL, apiKey, secretKey string) *FlipProvider {
 	return &FlipProvider{
 		client: &http.Client{
 			Timeout: 5 * time.Second,
 		},
-		baseURL:   cfg.BaseURL,
-		apiKey:    cfg.APIKey,
-		secretKey: cfg.SecretKey,
+		baseURL:   baseURL,
+		apiKey:    apiKey,
+		secretKey: secretKey,
 	}
 }
 
-// ValidateSignature validates the HMAC-SHA256 signature of a webhook payload.
+// ValidateSignature memvalidasi HMAC-SHA256 dari payload webhook.
 func (f *FlipProvider) ValidateSignature(payload []byte, signature string) bool {
 	mac := hmac.New(sha256.New, []byte(f.secretKey))
 	mac.Write(payload)
 	expectedMAC := mac.Sum(nil)
 	expectedSignature := hex.EncodeToString(expectedMAC)
+
+	// hmac.Equal mencegah timing attack
 	return hmac.Equal([]byte(expectedSignature), []byte(signature))
 }
 
-type flipCallbackPayload struct {
-	ID     string `json:"id"`
-	BillID string `json:"bill_id"`
-	Status string `json:"status"`
-	Amount int64  `json:"amount"` // flip.md §4.4 code snippet uses "amount"
-	Fee    int64  `json:"fee"`
-}
-
-// ParseCallback parses the webhook payload from Flip.
+// ParseCallback mem-parse payload webhook dan meneruskan status MENTAH dari Flip.
 func (f *FlipProvider) ParseCallback(payload []byte) (*CallbackEvent, error) {
-	var flipCb flipCallbackPayload
-	if err := json.Unmarshal(payload, &flipCb); err != nil {
+	var flipCallback struct {
+		ID     string `json:"id"`
+		BillID string `json:"bill_id"`
+		Amount int64  `json:"amount"` // Dana bersih setelah fee
+		Fee    int64  `json:"fee"`
+		Status string `json:"status"` // MENTAH: SUCCESSFUL, FAILED, PENDING, EXPIRED
+	}
+
+	if err := json.Unmarshal(payload, &flipCallback); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal flip callback: %w", err)
 	}
 
 	return &CallbackEvent{
-		EventID:        flipCb.ID,
-		BillID:         flipCb.BillID,
-		Status:         flipCb.Status,
-		AmountReceived: flipCb.Amount,
-		Fee:            flipCb.Fee,
+		EventID:        flipCallback.ID,
+		BillID:         flipCallback.BillID,
+		AmountReceived: flipCallback.Amount,
+		Fee:            flipCallback.Fee,
+		Status:         flipCallback.Status, // MENTAH — mapping ke PAID/EXPIRED dilakukan di Usecase
 	}, nil
 }
 
-type flipCreateVAPayload struct {
-	Title       string `json:"title"`
-	ExpiredDate string `json:"expired_date"`
-	BankCode    string `json:"bank_code"`
-	Amount      int64  `json:"amount"`
-}
-
-type flipCreateVAResponse struct {
-	ID          string `json:"id"`
-	VANumber    string `json:"va_number"`
-	BankName    string `json:"bank_name"`
-	ExpiredDate string `json:"expired_date"`
-}
-
-// CreateVA creates a new Virtual Account via Flip Business API.
+// CreateVA memanggil API Flip untuk membuat Virtual Account.
 func (f *FlipProvider) CreateVA(ctx context.Context, req *CreateVARequest) (*CreateVAResponse, error) {
-	if req == nil {
-		return nil, fmt.Errorf("create VA request cannot be nil")
-	}
-
-	// Use FixedZone to avoid panic if tzdata is missing in minimal Docker images.
-	wib := time.FixedZone("WIB", 7*60*60)
-	localExpiredAt := time.Now().In(wib).Add(time.Duration(req.ExpiryHours) * time.Hour)
-
-	payload := flipCreateVAPayload{
-		Title:       req.Name,
-		ExpiredDate: localExpiredAt.Format("2006-01-02 15:04:05"),
-		BankCode:    req.BankCode,
-		Amount:      req.Amount,
-	}
-
-	bodyBytes, err := json.Marshal(payload)
+	wib, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal create va payload: %w", err)
+		return nil, fmt.Errorf("failed to load WIB timezone: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, f.baseURL+"/v2/disbursement/bill", bytes.NewReader(bodyBytes))
+	// Hitung expired_date untuk dikirim ke Flip (WIB) sebagai fallback
+	expiredAtReq := time.Now().In(wib).Add(time.Duration(req.ExpiryHours) * time.Hour)
+
+	// Gunakan url.Values (form-urlencoded), BUKAN JSON payload
+	formData := url.Values{}
+	formData.Set("title", req.Name)
+	formData.Set("amount", strconv.FormatInt(req.Amount, 10))
+	formData.Set("expired_date", expiredAtReq.Format("2006-01-02 15:04:05"))
+	formData.Set("bank_code", req.BankCode)
+
+	endpoint := f.baseURL + "/v2/pwf/bill"
+
+	// strings.NewReader digunakan untuk form-urlencoded, sehingga import "bytes" tidak lagi dibutuhkan
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, strings.NewReader(formData.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create http request: %w", err)
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.SetBasicAuth(f.apiKey, "")
+	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	// Basic Auth: Base64(SecretKey + ":")
+	authString := base64.StdEncoding.EncodeToString([]byte(f.secretKey + ":"))
+	httpReq.Header.Set("Authorization", "Basic "+authString)
+
+	if req.IdempotencyKey != "" {
+		httpReq.Header.Set("Idempotency-Key", req.IdempotencyKey)
+	}
 
 	resp, err := f.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute http request: %w", err)
+		return nil, fmt.Errorf("HTTP request to Flip failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("flip api returned non-2xx status code: %d, body: %s", resp.StatusCode, string(respBody))
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("Flip API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var flipResp flipCreateVAResponse
-	if err = json.Unmarshal(respBody, &flipResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal flip response: %w", err)
+	var flipResp struct {
+		ID            string `json:"id"`
+		AccountNumber string `json:"account_number"`
+		BankCode      string `json:"bank_code"`
+		BankName      string `json:"bank_name"`
+		ExpiredDate   string `json:"expired_date"`
 	}
 
-	expiresAt, err := time.ParseInLocation("2006-01-02 15:04:05", flipResp.ExpiredDate, wib)
+	if err := json.Unmarshal(body, &flipResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal Flip response: %w", err)
+	}
+
+	// Parse expired_date yang dikembalikan Flip dengan timezone WIB
+	parsedExpiresAt, err := time.ParseInLocation("2006-01-02 15:04:05", flipResp.ExpiredDate, wib)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse expired_date from flip response: %w", err)
+		// Fallback jika Flip tidak mengembalikan format yang diharapkan atau error parsing
+		parsedExpiresAt = expiredAtReq
+	}
+
+	bankName := flipResp.BankName
+	if bankName == "" {
+		bankName = flipResp.BankCode
 	}
 
 	return &CreateVAResponse{
-		ExpiresAt:     expiresAt,
 		BillID:        flipResp.ID,
-		AccountNumber: flipResp.VANumber,
-		BankName:      flipResp.BankName,
+		AccountNumber: flipResp.AccountNumber,
+		BankName:      bankName,
+		ExpiresAt:     parsedExpiresAt,
 	}, nil
 }
