@@ -1,0 +1,100 @@
+syntax = "proto3";
+package order.v1;
+option go_package = "github.com/hodeifa/hyperlocal-backend/proto/order/v1;order";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc AcceptOrder(AcceptOrderRequest) returns (AcceptOrderResponse);
+  rpc StartTrip(StartTripRequest) returns (StartTripResponse);
+  rpc FinishTrip(FinishTripRequest) returns (FinishTripResponse);
+  rpc CancelOrderByDriver(CancelOrderByDriverRequest) returns (CancelOrderByDriverResponse);
+  rpc CancelOrderByCustomer(CancelOrderByCustomerRequest) returns (CancelOrderByCustomerResponse);
+  rpc PingOrder(PingOrderRequest) returns (PingOrderResponse);
+  rpc CreateDispute(CreateDisputeRequest) returns (CreateDisputeResponse);
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+}
+
+message CreateOrderRequest { 
+  string customer_id = 1; 
+  string pickup_address = 2; 
+  string dropoff_address = 3; 
+  double pickup_lat = 4; 
+  double pickup_lng = 5; 
+  double dropoff_lat = 6; 
+  double dropoff_lng = 7; 
+}
+message CreateOrderResponse { string order_id = 1; string status = 2; }
+
+// [FIX] Field `version` dihapus. Backend mengambil version via SELECT FOR UPDATE.
+message AcceptOrderRequest { string driver_id = 1; string order_id = 2; }
+message AcceptOrderResponse { bool success = 1; }
+
+message StartTripRequest { string order_id = 1; string driver_id = 2; }
+message StartTripResponse { bool success = 1; }
+
+// [FIX] Field `version` dihapus.
+message FinishTripRequest { 
+  string order_id = 1; 
+  string driver_id = 2; 
+  string payment_method = 3; 
+  string note = 4; 
+}
+message FinishTripResponse { bool success = 1; }
+
+// [FIX] Field `version` dihapus.
+message CancelOrderByDriverRequest { string order_id = 1; string driver_id = 2; }
+message CancelOrderByDriverResponse { bool success = 1; }
+
+message CancelOrderByCustomerRequest { string order_id = 1; string customer_id = 2; }
+message CancelOrderByCustomerResponse { bool success = 1; }
+
+message PingOrderRequest { string order_id = 1; string customer_id = 2; }
+message PingOrderResponse { bool success = 1; }
+
+message CreateDisputeRequest {
+  string order_id = 1;
+  string customer_id = 2;
+  string text = 3;
+  string photo_url = 4;
+}
+message CreateDisputeResponse { string dispute_id = 1; string status = 2; }
+
+message GetOrderRequest { 
+  string order_id = 1; 
+  string requester_role = 2; 
+}
+
+message CustomerFacingDriverInfo {
+  string name = 1;
+  string photo_url = 2;
+  string vehicle_type = 3;
+  string bank_name = 4;
+  string bank_account_last4 = 5;
+  string bank_account_name = 6;
+}
+
+message DriverFacingCustomerInfo {
+  string name = 1;
+  string phone_formatted = 2;
+}
+
+// Catatan Implementasi Handler: 
+// Field `platform_fee` HANYA diisi jika requester_role == "driver".
+// Field `eta_minutes` HANYA diisi jika requester_role == "customer".
+message GetOrderResponse { 
+  string id = 1;
+  string status = 2;
+  int64 fare = 3;
+  int64 platform_fee = 4; 
+  string pickup_address = 5;
+  string dropoff_address = 6;
+  double pickup_lat = 7;
+  double pickup_lng = 8;
+  double dropoff_lat = 9;
+  double dropoff_lng = 10;
+  string note = 11;
+  int32 eta_minutes = 12; 
+  
+  CustomerFacingDriverInfo driver = 13; 
+  DriverFacingCustomerInfo customer = 14; 
+}

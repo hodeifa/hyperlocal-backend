@@ -1,3 +1,4 @@
+// Package vatopup provides for Flip Business Virtual Accounts.
 package vatopup
 
 import (
@@ -19,6 +20,7 @@ import (
 // Compile-time check to ensure FlipProvider implements Provider
 var _ Provider = (*FlipProvider)(nil)
 
+// FlipProvider implements the Provider interface for Flip Business Virtual Accounts.
 type FlipProvider struct {
 	client    *http.Client
 	baseURL   string
@@ -54,9 +56,9 @@ func (f *FlipProvider) ParseCallback(payload []byte) (*CallbackEvent, error) {
 	var flipCallback struct {
 		ID     string `json:"id"`
 		BillID string `json:"bill_id"`
-		Amount int64  `json:"amount"` // Dana bersih setelah fee
+		Status string `json:"status"`
+		Amount int64  `json:"amount"`
 		Fee    int64  `json:"fee"`
-		Status string `json:"status"` // MENTAH: SUCCESSFUL, FAILED, PENDING, EXPIRED
 	}
 
 	if err := json.Unmarshal(payload, &flipCallback); err != nil {
@@ -130,7 +132,7 @@ func (f *FlipProvider) CreateVA(ctx context.Context, req *CreateVARequest) (*Cre
 		ExpiredDate   string `json:"expired_date"`
 	}
 
-	if err := json.Unmarshal(body, &flipResp); err != nil {
+	if err = json.Unmarshal(body, &flipResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal Flip response: %w", err)
 	}
 
