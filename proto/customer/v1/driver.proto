@@ -1,0 +1,145 @@
+syntax = "proto3";
+package driver.v1;
+option go_package = "github.com/hodeifa/hyperlocal-backend/proto/driver/v1;driver";
+import "google/protobuf/timestamp.proto";
+
+service DriverService {
+  // --- Auth & Session ---
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc VerifyOTP(VerifyOTPRequest) returns (VerifyOTPResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc RevokeAll(RevokeAllRequest) returns (RevokeAllResponse);
+  
+  // --- Profile & Verification (Private/Full Data) ---
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc GetVerificationRejectionReason(GetVerificationRejectionReasonRequest) returns (GetVerificationRejectionReasonResponse);
+  
+  // --- Public Info (Consumed by Order Service) ---
+  rpc GetPublicDriverInfo(GetPublicDriverInfoRequest) returns (GetPublicDriverInfoResponse);
+  
+  // --- Status ---
+  rpc GoOnline(GoOnlineRequest) returns (GoOnlineResponse);
+  rpc GoOffline(GoOfflineRequest) returns (GoOfflineResponse);
+  
+  // --- Wallet RPCs ---
+  rpc GetWalletInfo(GetWalletInfoRequest) returns (GetWalletInfoResponse);
+  rpc DeductWallet(DeductWalletRequest) returns (DeductWalletResponse);
+  rpc CreateTopupRequest(CreateTopupRequestReq) returns (CreateTopupRequestRes);
+  rpc GetTransactions(GetTransactionsRequest) returns (GetTransactionsResponse);
+  rpc GetTopupBanks(GetTopupBanksRequest) returns (GetTopupBanksResponse);
+}
+
+// ==========================================
+// Auth & Session
+// ==========================================
+message RegisterRequest { string phone_number = 1; string name = 2; }
+message RegisterResponse { string driver_id = 1; }
+
+message VerifyOTPRequest { string phone_number = 1; string otp = 2; }
+message VerifyOTPResponse { 
+  string access_token = 1; 
+  string refresh_token = 2; 
+  bool has_customer_role = 3; // Untuk banner cross-promo
+}
+
+message RefreshTokenRequest { string refresh_token = 1; }
+message RefreshTokenResponse { string access_token = 1; string refresh_token = 2; }
+
+message RevokeAllRequest { string driver_id = 1; }
+message RevokeAllResponse { bool success = 1; }
+
+// ==========================================
+// Profile & Verification
+// ==========================================
+
+// [DRY] Ekstrak data publik untuk mencegah drift antara GetProfile dan GetPublicDriverInfo
+message DriverPublicInfo {
+  string name = 1;
+  string photo_url = 2;
+  string vehicle_type = 3;
+  string bank_name = 4;
+  string bank_account_last4 = 5;
+  string bank_account_name = 6;
+}
+
+message GetProfileRequest { string driver_id = 1; }
+message GetProfileResponse { 
+  // Data Privat (hanya untuk mitra itu sendiri / admin)
+  string verification_status = 1; 
+  string consent_json = 2; 
+  google.protobuf.Timestamp consent_at = 3;
+  
+  // Data Publik (di-embed)
+  DriverPublicInfo public_info = 4; 
+}
+
+message UpdateProfileRequest {
+  string driver_id = 1;
+  string consent_json = 2;
+  google.protobuf.Timestamp consent_at = 3;
+}
+message UpdateProfileResponse { bool success = 1; }
+
+message GetVerificationRejectionReasonRequest { string driver_id = 1; }
+message GetVerificationRejectionReasonResponse { string reason = 1; }
+
+// ==========================================
+// Public Info (Cross-Service)
+// ==========================================
+message GetPublicDriverInfoRequest { string driver_id = 1; }
+message GetPublicDriverInfoResponse {
+  // Data Publik (di-embed, sama persis dengan di GetProfileResponse)
+  DriverPublicInfo public_info = 1; 
+}
+
+// ==========================================
+// Status
+// ==========================================
+message GoOnlineRequest { string driver_id = 1; }
+message GoOnlineResponse { bool success = 1; }
+message GoOfflineRequest { string driver_id = 1; }
+message GoOfflineResponse { bool success = 1; }
+
+// ==========================================
+// Wallet RPCs
+// ==========================================
+message GetWalletInfoRequest { string driver_id = 1; }
+message GetWalletInfoResponse { int64 balance = 1; int64 minimum_required = 2; }
+
+message DeductWalletRequest { string driver_id = 1; string order_id = 2; int64 amount = 3; }
+message DeductWalletResponse { bool success = 1; int64 new_balance = 2; }
+
+message CreateTopupRequestReq {
+  string driver_id = 1;
+  string idempotency_key = 2;
+  int64 amount = 3;
+  string bank_code = 4;
+  string title = 5;
+}
+message CreateTopupRequestRes {
+  string topup_id = 1;
+  string va_number = 2;
+  string bank_name = 3;
+  int64 amount = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  string status = 6;
+}
+
+message GetTransactionsRequest { string driver_id = 1; int32 page = 2; int32 limit = 3; }
+message Transaction {
+  string id = 1;
+  string type = 2; // TOP_UP, DEDUCTION, WITHDRAWAL
+  int64 amount = 3;
+  string order_id = 4;
+  string topup_request_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+message GetTransactionsResponse { repeated Transaction transactions = 1; int32 total = 2; }
+
+message GetTopupBanksRequest {}
+message Bank {
+  string code = 1;
+  string name = 2;
+}
+message GetTopupBanksResponse { repeated Bank banks = 1; }

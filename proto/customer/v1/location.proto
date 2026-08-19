@@ -1,0 +1,42 @@
+syntax = "proto3";
+package location.v1;
+option go_package = "github.com/hodeifa/hyperlocal-backend/proto/location/v1;location";
+
+service LocationService {
+  rpc GetDriversWithinRadius(GetDriversWithinRadiusRequest) returns (GetDriversWithinRadiusResponse);
+  rpc GetNearbyActive(GetNearbyActiveRequest) returns (GetNearbyActiveResponse);
+}
+
+message GetDriversWithinRadiusRequest {
+  double latitude = 1;
+  double longitude = 2;
+  int32 radius_meters = 3;
+}
+
+message DriverLocation {
+  string driver_id = 1;
+  double latitude = 2;
+  double longitude = 3;
+  double distance_meters = 4;
+}
+
+message GetDriversWithinRadiusResponse {
+  repeated DriverLocation drivers = 1;
+}
+
+message GetNearbyActiveRequest {
+  double latitude = 1;
+  double longitude = 2;
+  int32 radius_meters = 3;
+}
+
+message NearbyActiveDriver {
+  string driver_id = 1;
+  double latitude = 2;
+  double longitude = 3;
+  string vehicle_type = 4;
+}
+
+message GetNearbyActiveResponse {
+  repeated NearbyActiveDriver drivers = 1;
+}

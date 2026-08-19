@@ -1,0 +1,46 @@
+syntax = "proto3";
+package map.v1;
+option go_package = "github.com/hodeifa/hyperlocal-backend/proto/map/v1;map";
+
+service MapService {
+  rpc GetRoute(GetRouteRequest) returns (GetRouteResponse);
+  rpc Geocode(GeocodeRequest) returns (GeocodeResponse);
+  rpc ReverseGeocode(ReverseGeocodeRequest) returns (ReverseGeocodeResponse);
+  rpc FareEstimate(FareEstimateRequest) returns (FareEstimateResponse);
+}
+
+message GetRouteRequest {
+  double pickup_lat = 1; 
+  double pickup_lng = 2;
+  double dropoff_lat = 3; 
+  double dropoff_lng = 4;
+}
+message GetRouteResponse {
+  int32 distance_meters = 1;
+  int32 duration_seconds = 2;
+  string polyline = 3;
+}
+
+message GeocodeRequest { string query = 1; int32 limit = 2; }
+message GeocodeResult {
+  string display_name = 1;
+  double latitude = 2;
+  double longitude = 3;
+}
+message GeocodeResponse { repeated GeocodeResult results = 1; }
+
+message ReverseGeocodeRequest { double latitude = 1; double longitude = 2; }
+message ReverseGeocodeResponse { string display_name = 1; }
+
+message FareEstimateRequest {
+  double pickup_lat = 1; 
+  double pickup_lng = 2;
+  double dropoff_lat = 3; 
+  double dropoff_lng = 4;
+}
+message FareEstimateResponse {
+  int64 total_fare = 1;        // e.g. 6000
+  int64 mitra_service_fee = 2; // e.g. 5000
+  int64 platform_fee = 3;      // e.g. 1000
+  int32 distance_meters = 4;
+}

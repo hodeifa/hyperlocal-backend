@@ -99,3 +99,30 @@ lint:
 		(cd $$mod && golangci-lint run ./...) || exit 1; \
 	done
 	@echo "✅ All modules passed linting!"
+	
+.PHONY: proto-gen
+proto-gen:
+	@echo "🧹 Cleaning old generated files..."
+	@find proto -name "*.pb.go" -type f -delete
+	@find proto -name "*_grpc.pb.go" -type f -delete
+	@echo "🚀 Generating gRPC code..."
+	@for dir in $(shell find proto -name "*.proto" -exec dirname {} \; | sort -u); do \
+		protoc --proto_path=. \
+			--go_out=. --go_opt=paths=source_relative \
+			--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+			$$dir/*.proto; \
+	done
+	@echo "✅ gRPC code generated successfully alongside .proto files"
+# ==============================================================================
+# SECURITY SCANNING
+# ==============================================================================
+
+.PHONY: gitleaks
+gitleaks:
+	@echo "🔒 Running gitleaks security scan..."
+	@gitleaks detect --source . --verbose
+	@echo "✅ No secrets found!"
+
+.PHONY: security
+security: gitleaks
+	@echo "🛡️ All security checks passed!"

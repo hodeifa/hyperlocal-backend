@@ -1,0 +1,18 @@
+syntax = "proto3";
+package chat.v1;
+option go_package = "github.com/hodeifa/hyperlocal-backend/proto/chat/v1;chat";
+
+service ChatService {
+  // Satu-satunya RPC internal: digunakan Order Service untuk menampilkan badge
+  // notifikasi chat atau indikator attachment pada list order.
+  rpc GetOrderChatMetadata(GetOrderChatMetadataRequest) returns (GetOrderChatMetadataResponse);
+}
+
+message GetOrderChatMetadataRequest { 
+  string order_id = 1; 
+}
+
+message GetOrderChatMetadataResponse { 
+  bool has_attachments = 1; 
+  int32 unread_count = 2; 
+}

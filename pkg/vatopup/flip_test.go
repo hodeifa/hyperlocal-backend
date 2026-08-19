@@ -22,15 +22,19 @@ func TestFlipProvider_ValidateSignature(t *testing.T) {
 	mac.Write(payload)
 	validSignature := hex.EncodeToString(mac.Sum(nil))
 
+	// [FIX FIELALIGNMENT]
+	// Urutkan field string (16 bytes) terlebih dahulu, baru slice (24 bytes), lalu bool.
+	// Ini memadatkan pointer di awal struct sehingga GC hanya perlu memindai 40 byte
+	// (bukan 48 byte), memuaskan linter fieldalignment.
 	tests := []struct {
 		name      string
-		payload   []byte
 		signature string
+		payload   []byte
 		expected  bool
 	}{
-		{"Valid Signature", payload, validSignature, true},
-		{"Invalid Signature", payload, "invalid-signature", false},
-		{"Tampered Payload", []byte(`{"id":"123","bill_id":"456","amount":50000,"fee":2500,"status":"FAILED"}`), validSignature, false},
+		{"Valid Signature", validSignature, payload, true},
+		{"Invalid Signature", "invalid-signature", payload, false},
+		{"Tampered Payload", validSignature, []byte(`{"id":"123","bill_id":"456","amount":50000,"fee":2500,"status":"FAILED"}`), false},
 	}
 
 	for _, tt := range tests {
