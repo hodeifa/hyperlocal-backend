@@ -22,10 +22,8 @@ func TestFlipProvider_ValidateSignature(t *testing.T) {
 	mac.Write(payload)
 	validSignature := hex.EncodeToString(mac.Sum(nil))
 
-	// [FIX FIELALIGNMENT]
-	// Urutkan field string (16 bytes) terlebih dahulu, baru slice (24 bytes), lalu bool.
-	// Ini memadatkan pointer di awal struct sehingga GC hanya perlu memindai 40 byte
-	// (bukan 48 byte), memuaskan linter fieldalignment.
+	// Urutan field sengaja: string dulu (16 byte), baru bool, agar linter
+	// govet/fieldalignment (aktif di .golangci.yml, TIDAK dikecualikan untuk _test.go) tidak komplain padding.
 	tests := []struct {
 		name      string
 		signature string
@@ -49,31 +47,51 @@ func TestFlipProvider_ValidateSignature(t *testing.T) {
 func TestFlipProvider_ParseCallback(t *testing.T) {
 	provider := NewFlipProvider("http://localhost", "api-key", "secret")
 
+	// Selain Status, kita juga assert EventID/BillID/AmountReceived/Fee supaya
+	// regresi mapping field (bukan cuma status) ikut tertangkap oleh test ini.
+	//
+	// vatopup.go mewajibkan Status TETAP MENTAH ("SUCCESSFUL"/"FAILED"/"PENDING"/"EXPIRED") —
+	// mapping ke status internal (PAID/EXPIRED) adalah tanggung jawab Usecase, BUKAN provider ini,
+	// supaya guard `if event.Status != "SUCCESSFUL"` di webhook handler tetap benar.
 	tests := []struct {
-		name           string
-		payload        string
-		expectedStatus string // Expect RAW status — bukan PAID/EXPIRED
-		expectErr      bool
+		name                   string
+		payload                string
+		expectedStatus         string
+		expectedEventID        string
+		expectedBillID         string
+		expectedAmountReceived int64
+		expectedFee            int64
+		expectErr              bool
 	}{
 		{
-			name:           "Success Status",
-			payload:        `{"id":"evt_1","bill_id":"bill_1","amount":47500,"fee":2500,"status":"SUCCESSFUL"}`,
-			expectedStatus: "SUCCESSFUL", // RAW
+			name:                   "Success Status",
+			payload:                `{"id":"evt_1","bill_id":"bill_1","amount":47500,"fee":2500,"status":"SUCCESSFUL"}`,
+			expectedStatus:         "SUCCESSFUL", // RAW, bukan "PAID"
+			expectedEventID:        "evt_1",
+			expectedBillID:         "bill_1",
+			expectedAmountReceived: 47500,
+			expectedFee:            2500,
 		},
 		{
-			name:           "Failed Status",
-			payload:        `{"id":"evt_2","bill_id":"bill_2","amount":0,"fee":0,"status":"FAILED"}`,
-			expectedStatus: "FAILED", // RAW
+			name:            "Failed Status",
+			payload:         `{"id":"evt_2","bill_id":"bill_2","amount":0,"fee":0,"status":"FAILED"}`,
+			expectedStatus:  "FAILED", // RAW
+			expectedEventID: "evt_2",
+			expectedBillID:  "bill_2",
 		},
 		{
-			name:           "Pending Status",
-			payload:        `{"id":"evt_3","bill_id":"bill_3","amount":0,"fee":0,"status":"PENDING"}`,
-			expectedStatus: "PENDING", // RAW
+			name:            "Pending Status",
+			payload:         `{"id":"evt_3","bill_id":"bill_3","amount":0,"fee":0,"status":"PENDING"}`,
+			expectedStatus:  "PENDING", // RAW
+			expectedEventID: "evt_3",
+			expectedBillID:  "bill_3",
 		},
 		{
-			name:           "Expired Status",
-			payload:        `{"id":"evt_4","bill_id":"bill_4","amount":0,"fee":0,"status":"EXPIRED"}`,
-			expectedStatus: "EXPIRED", // RAW
+			name:            "Expired Status",
+			payload:         `{"id":"evt_4","bill_id":"bill_4","amount":0,"fee":0,"status":"EXPIRED"}`,
+			expectedStatus:  "EXPIRED", // RAW
+			expectedEventID: "evt_4",
+			expectedBillID:  "bill_4",
 		},
 		{
 			name:      "Invalid JSON",
@@ -89,38 +107,46 @@ func TestFlipProvider_ParseCallback(t *testing.T) {
 				t.Errorf("ParseCallback() error = %v, expectErr %v", err, tt.expectErr)
 				return
 			}
-			if !tt.expectErr && event.Status != tt.expectedStatus {
+			if tt.expectErr {
+				return
+			}
+			if event.Status != tt.expectedStatus {
 				t.Errorf("ParseCallback() status = %v, want %v", event.Status, tt.expectedStatus)
+			}
+			if event.EventID != tt.expectedEventID {
+				t.Errorf("ParseCallback() EventID = %v, want %v", event.EventID, tt.expectedEventID)
+			}
+			if event.BillID != tt.expectedBillID {
+				t.Errorf("ParseCallback() BillID = %v, want %v", event.BillID, tt.expectedBillID)
+			}
+			if event.AmountReceived != tt.expectedAmountReceived {
+				t.Errorf("ParseCallback() AmountReceived = %v, want %v", event.AmountReceived, tt.expectedAmountReceived)
+			}
+			if event.Fee != tt.expectedFee {
+				t.Errorf("ParseCallback() Fee = %v, want %v", event.Fee, tt.expectedFee)
 			}
 		})
 	}
 }
 
-func TestFlipProvider_CreateVA(t *testing.T) {
-	// [FIX] Gunakan tanggal tetap yang jauh di masa depan untuk mock response.
-	// Ini memastikan jika parsing expired_date GAGAL dan fallback ke time.Now()+24h,
-	// assertion PASTI mendeteksi perbedaannya (tahun 2099 vs tahun sekarang).
-	// Sebelumnya menggunakan time.Now() yang bisa jatuh di detik yang sama
-	// dengan fallback, sehingga test selalu hijau meskipun parsing gagal.
+func TestFlipProvider_CreateVA_Success(t *testing.T) {
+	// Pakai tanggal tetap yang jauh di masa depan untuk mock response.
+	// Ini memastikan jika parsing expired_date GAGAL dan diam-diam fallback ke
+	// time.Now()+ExpiryHours, assertion di bawah PASTI mendeteksi selisihnya
+	// (tahun 2099 vs tahun berjalan) — bukan cuma kebetulan lolos karena timing.
 	fixedFutureDate := "2099-12-31 23:59:59"
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify Content-Type: form-urlencoded, bukan JSON
 		if r.Header.Get("Content-Type") != "application/x-www-form-urlencoded" {
 			t.Errorf("expected Content-Type application/x-www-form-urlencoded, got %s", r.Header.Get("Content-Type"))
 		}
-
-		// Verify Auth: Basic, bukan Bearer
 		if !strings.HasPrefix(r.Header.Get("Authorization"), "Basic ") {
 			t.Errorf("expected Basic Auth, got %s", r.Header.Get("Authorization"))
 		}
-
-		// Verify Idempotency-Key header
 		if r.Header.Get("Idempotency-Key") != "uuid-v7-test" {
 			t.Errorf("expected Idempotency-Key uuid-v7-test, got %s", r.Header.Get("Idempotency-Key"))
 		}
 
-		// Parse form data
 		if err := r.ParseForm(); err != nil {
 			t.Errorf("failed to parse form: %v", err)
 		}
@@ -134,17 +160,16 @@ func TestFlipProvider_CreateVA(t *testing.T) {
 			t.Errorf("expected amount '50000', got %s", r.FormValue("amount"))
 		}
 
-		// Mock Response — Flip membalas dengan JSON
 		resp := map[string]interface{}{
 			"id":             "flip_bill_123",
 			"account_number": "888899990000",
 			"bank_code":      "BCA",
 			"bank_name":      "Bank Central Asia",
-			"expired_date":   fixedFutureDate, // Tanggal tetap untuk mendeteksi fallback
+			"expired_date":   fixedFutureDate,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(resp) //nolint:errcheck // helper test server
 	}))
 	defer server.Close()
 
@@ -174,15 +199,67 @@ func TestFlipProvider_CreateVA(t *testing.T) {
 		t.Errorf("expected BankName Bank Central Asia, got %s", resp.BankName)
 	}
 
-	// [CRITICAL ASSERTION] Verifikasi Parsing Timezone
-	// Karena mock mengirim "2099-12-31 23:59:59", jika parsing GAGAL dan fallback
-	// ke time.Now()+24h, nilai resp.ExpiresAt akan menjadi tahun sekarang,
-	// dan assertion ini PASTI menangkap bug tersebut.
+	// Verifikasi parsing timezone WIB — lihat komentar fixedFutureDate di atas.
 	if resp.ExpiresAt.Format("2006-01-02 15:04:05") != fixedFutureDate {
-		t.Errorf("expected ExpiresAt parsed value %s, got %s (kemungkinan parsing gagal dan fallback ke waktu lokal)",
+		t.Errorf("expected ExpiresAt parsed value %s, got %s (kemungkinan parsing gagal dan diam-diam fallback ke waktu lokal)",
 			fixedFutureDate, resp.ExpiresAt.Format("2006-01-02 15:04:05"))
 	}
 	if resp.ExpiresAt.Location().String() != "Asia/Jakarta" {
 		t.Errorf("expected ExpiresAt timezone Asia/Jakarta, got %s", resp.ExpiresAt.Location())
+	}
+}
+
+func TestFlipProvider_CreateVA_APIError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "internal server error"}`)) //nolint:errcheck
+	}))
+	defer server.Close()
+
+	provider := NewFlipProvider(server.URL, "test-api-key", "test-secret-key")
+
+	req := &CreateVARequest{Name: "Test", Amount: 50000, ExpiryHours: 24, BankCode: "BCA"}
+	_, err := provider.CreateVA(context.Background(), req)
+
+	if err == nil {
+		t.Fatal("expected error for HTTP 500, got nil")
+	}
+	if !strings.Contains(err.Error(), "Flip API returned status 500") {
+		t.Errorf("expected error to contain 'Flip API returned status 500', got %v", err)
+	}
+}
+
+func TestFlipProvider_CreateVA_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"invalid_json`)) //nolint:errcheck
+	}))
+	defer server.Close()
+
+	provider := NewFlipProvider(server.URL, "test-api-key", "test-secret-key")
+
+	req := &CreateVARequest{Name: "Test", Amount: 50000, ExpiryHours: 24, BankCode: "BCA"}
+	_, err := provider.CreateVA(context.Background(), req)
+
+	if err == nil {
+		t.Fatal("expected error for invalid JSON, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to unmarshal Flip response") {
+		t.Errorf("expected unmarshal error, got %v", err)
+	}
+}
+
+func TestFlipProvider_CreateVA_NetworkError(t *testing.T) {
+	// Port 1 biasanya tidak dipakai dan langsung memicu connection refused.
+	provider := NewFlipProvider("http://127.0.0.1:1", "test-api-key", "test-secret-key")
+
+	req := &CreateVARequest{Name: "Test", Amount: 50000, ExpiryHours: 24, BankCode: "BCA"}
+	_, err := provider.CreateVA(context.Background(), req)
+
+	if err == nil {
+		t.Fatal("expected network error, got nil")
+	}
+	if !strings.Contains(err.Error(), "HTTP request to Flip failed") {
+		t.Errorf("expected network error, got %v", err)
 	}
 }

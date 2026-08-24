@@ -11,3 +11,8 @@ bin/
 secrets/*.json
 secrets/
 *.json
+# ============================================
+# Go test artifacts
+# ============================================
+coverage.out
+*.out

@@ -15,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	_ "time/tzdata" // [CRITICAL FIX v2.4] Embed timezone DB ke binary.
+	                // Mencegah panic "unknown time zone Asia/Jakarta" di container
+	                // Alpine/distroless yang tidak memiliki paket tzdata OS-level.	
 )
 
 // Compile-time check to ensure FlipProvider implements Provider
