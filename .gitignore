@@ -15,4 +15,4 @@ secrets/
 # Go test artifacts
 # ============================================
 coverage.out
-*.out
+*.outapi-gateway/.env
