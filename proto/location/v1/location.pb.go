@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -20,19 +21,414 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GetDriversWithinRadiusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Latitude      float64                `protobuf:"fixed64,1,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float64                `protobuf:"fixed64,2,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	RadiusMeters  int32                  `protobuf:"varint,3,opt,name=radius_meters,json=radiusMeters,proto3" json:"radius_meters,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDriversWithinRadiusRequest) Reset() {
+	*x = GetDriversWithinRadiusRequest{}
+	mi := &file_proto_location_v1_location_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDriversWithinRadiusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDriversWithinRadiusRequest) ProtoMessage() {}
+
+func (x *GetDriversWithinRadiusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_location_v1_location_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDriversWithinRadiusRequest.ProtoReflect.Descriptor instead.
+func (*GetDriversWithinRadiusRequest) Descriptor() ([]byte, []int) {
+	return file_proto_location_v1_location_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetDriversWithinRadiusRequest) GetLatitude() float64 {
+	if x != nil {
+		return x.Latitude
+	}
+	return 0
+}
+
+func (x *GetDriversWithinRadiusRequest) GetLongitude() float64 {
+	if x != nil {
+		return x.Longitude
+	}
+	return 0
+}
+
+func (x *GetDriversWithinRadiusRequest) GetRadiusMeters() int32 {
+	if x != nil {
+		return x.RadiusMeters
+	}
+	return 0
+}
+
+type DriverLocation struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	DriverId       string                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	Latitude       float64                `protobuf:"fixed64,2,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude      float64                `protobuf:"fixed64,3,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	DistanceMeters float64                `protobuf:"fixed64,4,opt,name=distance_meters,json=distanceMeters,proto3" json:"distance_meters,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *DriverLocation) Reset() {
+	*x = DriverLocation{}
+	mi := &file_proto_location_v1_location_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DriverLocation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DriverLocation) ProtoMessage() {}
+
+func (x *DriverLocation) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_location_v1_location_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DriverLocation.ProtoReflect.Descriptor instead.
+func (*DriverLocation) Descriptor() ([]byte, []int) {
+	return file_proto_location_v1_location_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DriverLocation) GetDriverId() string {
+	if x != nil {
+		return x.DriverId
+	}
+	return ""
+}
+
+func (x *DriverLocation) GetLatitude() float64 {
+	if x != nil {
+		return x.Latitude
+	}
+	return 0
+}
+
+func (x *DriverLocation) GetLongitude() float64 {
+	if x != nil {
+		return x.Longitude
+	}
+	return 0
+}
+
+func (x *DriverLocation) GetDistanceMeters() float64 {
+	if x != nil {
+		return x.DistanceMeters
+	}
+	return 0
+}
+
+type GetDriversWithinRadiusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Drivers       []*DriverLocation      `protobuf:"bytes,1,rep,name=drivers,proto3" json:"drivers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDriversWithinRadiusResponse) Reset() {
+	*x = GetDriversWithinRadiusResponse{}
+	mi := &file_proto_location_v1_location_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDriversWithinRadiusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDriversWithinRadiusResponse) ProtoMessage() {}
+
+func (x *GetDriversWithinRadiusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_location_v1_location_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDriversWithinRadiusResponse.ProtoReflect.Descriptor instead.
+func (*GetDriversWithinRadiusResponse) Descriptor() ([]byte, []int) {
+	return file_proto_location_v1_location_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetDriversWithinRadiusResponse) GetDrivers() []*DriverLocation {
+	if x != nil {
+		return x.Drivers
+	}
+	return nil
+}
+
+type GetNearbyActiveRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Latitude      float64                `protobuf:"fixed64,1,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float64                `protobuf:"fixed64,2,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	RadiusMeters  int32                  `protobuf:"varint,3,opt,name=radius_meters,json=radiusMeters,proto3" json:"radius_meters,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNearbyActiveRequest) Reset() {
+	*x = GetNearbyActiveRequest{}
+	mi := &file_proto_location_v1_location_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNearbyActiveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNearbyActiveRequest) ProtoMessage() {}
+
+func (x *GetNearbyActiveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_location_v1_location_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNearbyActiveRequest.ProtoReflect.Descriptor instead.
+func (*GetNearbyActiveRequest) Descriptor() ([]byte, []int) {
+	return file_proto_location_v1_location_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetNearbyActiveRequest) GetLatitude() float64 {
+	if x != nil {
+		return x.Latitude
+	}
+	return 0
+}
+
+func (x *GetNearbyActiveRequest) GetLongitude() float64 {
+	if x != nil {
+		return x.Longitude
+	}
+	return 0
+}
+
+func (x *GetNearbyActiveRequest) GetRadiusMeters() int32 {
+	if x != nil {
+		return x.RadiusMeters
+	}
+	return 0
+}
+
+type NearbyActiveDriver struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DriverId      string                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	Latitude      float64                `protobuf:"fixed64,2,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float64                `protobuf:"fixed64,3,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	VehicleType   string                 `protobuf:"bytes,4,opt,name=vehicle_type,json=vehicleType,proto3" json:"vehicle_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NearbyActiveDriver) Reset() {
+	*x = NearbyActiveDriver{}
+	mi := &file_proto_location_v1_location_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NearbyActiveDriver) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NearbyActiveDriver) ProtoMessage() {}
+
+func (x *NearbyActiveDriver) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_location_v1_location_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NearbyActiveDriver.ProtoReflect.Descriptor instead.
+func (*NearbyActiveDriver) Descriptor() ([]byte, []int) {
+	return file_proto_location_v1_location_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *NearbyActiveDriver) GetDriverId() string {
+	if x != nil {
+		return x.DriverId
+	}
+	return ""
+}
+
+func (x *NearbyActiveDriver) GetLatitude() float64 {
+	if x != nil {
+		return x.Latitude
+	}
+	return 0
+}
+
+func (x *NearbyActiveDriver) GetLongitude() float64 {
+	if x != nil {
+		return x.Longitude
+	}
+	return 0
+}
+
+func (x *NearbyActiveDriver) GetVehicleType() string {
+	if x != nil {
+		return x.VehicleType
+	}
+	return ""
+}
+
+type GetNearbyActiveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Drivers       []*NearbyActiveDriver  `protobuf:"bytes,1,rep,name=drivers,proto3" json:"drivers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNearbyActiveResponse) Reset() {
+	*x = GetNearbyActiveResponse{}
+	mi := &file_proto_location_v1_location_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNearbyActiveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNearbyActiveResponse) ProtoMessage() {}
+
+func (x *GetNearbyActiveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_location_v1_location_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNearbyActiveResponse.ProtoReflect.Descriptor instead.
+func (*GetNearbyActiveResponse) Descriptor() ([]byte, []int) {
+	return file_proto_location_v1_location_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetNearbyActiveResponse) GetDrivers() []*NearbyActiveDriver {
+	if x != nil {
+		return x.Drivers
+	}
+	return nil
+}
+
 var File_proto_location_v1_location_proto protoreflect.FileDescriptor
 
 const file_proto_location_v1_location_proto_rawDesc = "" +
 	"\n" +
-	" proto/location/v1/location.proto\x12\vlocation.v1BBZ@github.com/hodeifa/hyperlocal-backend/proto/location/v1;locationb\x06proto3"
+	" proto/location/v1/location.proto\x12\vlocation.v1\"~\n" +
+	"\x1dGetDriversWithinRadiusRequest\x12\x1a\n" +
+	"\blatitude\x18\x01 \x01(\x01R\blatitude\x12\x1c\n" +
+	"\tlongitude\x18\x02 \x01(\x01R\tlongitude\x12#\n" +
+	"\rradius_meters\x18\x03 \x01(\x05R\fradiusMeters\"\x90\x01\n" +
+	"\x0eDriverLocation\x12\x1b\n" +
+	"\tdriver_id\x18\x01 \x01(\tR\bdriverId\x12\x1a\n" +
+	"\blatitude\x18\x02 \x01(\x01R\blatitude\x12\x1c\n" +
+	"\tlongitude\x18\x03 \x01(\x01R\tlongitude\x12'\n" +
+	"\x0fdistance_meters\x18\x04 \x01(\x01R\x0edistanceMeters\"W\n" +
+	"\x1eGetDriversWithinRadiusResponse\x125\n" +
+	"\adrivers\x18\x01 \x03(\v2\x1b.location.v1.DriverLocationR\adrivers\"w\n" +
+	"\x16GetNearbyActiveRequest\x12\x1a\n" +
+	"\blatitude\x18\x01 \x01(\x01R\blatitude\x12\x1c\n" +
+	"\tlongitude\x18\x02 \x01(\x01R\tlongitude\x12#\n" +
+	"\rradius_meters\x18\x03 \x01(\x05R\fradiusMeters\"\x8e\x01\n" +
+	"\x12NearbyActiveDriver\x12\x1b\n" +
+	"\tdriver_id\x18\x01 \x01(\tR\bdriverId\x12\x1a\n" +
+	"\blatitude\x18\x02 \x01(\x01R\blatitude\x12\x1c\n" +
+	"\tlongitude\x18\x03 \x01(\x01R\tlongitude\x12!\n" +
+	"\fvehicle_type\x18\x04 \x01(\tR\vvehicleType\"T\n" +
+	"\x17GetNearbyActiveResponse\x129\n" +
+	"\adrivers\x18\x01 \x03(\v2\x1f.location.v1.NearbyActiveDriverR\adrivers2\xe2\x01\n" +
+	"\x0fLocationService\x12q\n" +
+	"\x16GetDriversWithinRadius\x12*.location.v1.GetDriversWithinRadiusRequest\x1a+.location.v1.GetDriversWithinRadiusResponse\x12\\\n" +
+	"\x0fGetNearbyActive\x12#.location.v1.GetNearbyActiveRequest\x1a$.location.v1.GetNearbyActiveResponseBBZ@github.com/hodeifa/hyperlocal-backend/proto/location/v1;locationb\x06proto3"
 
-var file_proto_location_v1_location_proto_goTypes = []any{}
+var (
+	file_proto_location_v1_location_proto_rawDescOnce sync.Once
+	file_proto_location_v1_location_proto_rawDescData []byte
+)
+
+func file_proto_location_v1_location_proto_rawDescGZIP() []byte {
+	file_proto_location_v1_location_proto_rawDescOnce.Do(func() {
+		file_proto_location_v1_location_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_location_v1_location_proto_rawDesc), len(file_proto_location_v1_location_proto_rawDesc)))
+	})
+	return file_proto_location_v1_location_proto_rawDescData
+}
+
+var file_proto_location_v1_location_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_location_v1_location_proto_goTypes = []any{
+	(*GetDriversWithinRadiusRequest)(nil),  // 0: location.v1.GetDriversWithinRadiusRequest
+	(*DriverLocation)(nil),                 // 1: location.v1.DriverLocation
+	(*GetDriversWithinRadiusResponse)(nil), // 2: location.v1.GetDriversWithinRadiusResponse
+	(*GetNearbyActiveRequest)(nil),         // 3: location.v1.GetNearbyActiveRequest
+	(*NearbyActiveDriver)(nil),             // 4: location.v1.NearbyActiveDriver
+	(*GetNearbyActiveResponse)(nil),        // 5: location.v1.GetNearbyActiveResponse
+}
 var file_proto_location_v1_location_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: location.v1.GetDriversWithinRadiusResponse.drivers:type_name -> location.v1.DriverLocation
+	4, // 1: location.v1.GetNearbyActiveResponse.drivers:type_name -> location.v1.NearbyActiveDriver
+	0, // 2: location.v1.LocationService.GetDriversWithinRadius:input_type -> location.v1.GetDriversWithinRadiusRequest
+	3, // 3: location.v1.LocationService.GetNearbyActive:input_type -> location.v1.GetNearbyActiveRequest
+	2, // 4: location.v1.LocationService.GetDriversWithinRadius:output_type -> location.v1.GetDriversWithinRadiusResponse
+	5, // 5: location.v1.LocationService.GetNearbyActive:output_type -> location.v1.GetNearbyActiveResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_location_v1_location_proto_init() }
@@ -46,12 +442,13 @@ func file_proto_location_v1_location_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_location_v1_location_proto_rawDesc), len(file_proto_location_v1_location_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   6,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_proto_location_v1_location_proto_goTypes,
 		DependencyIndexes: file_proto_location_v1_location_proto_depIdxs,
+		MessageInfos:      file_proto_location_v1_location_proto_msgTypes,
 	}.Build()
 	File_proto_location_v1_location_proto = out.File
 	file_proto_location_v1_location_proto_goTypes = nil

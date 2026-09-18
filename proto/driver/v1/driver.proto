@@ -1,3 +1,30 @@
 syntax = "proto3";
+
 package driver.v1;
+
 option go_package = "github.com/hodeifa/hyperlocal-backend/proto/driver/v1;driver";
+
+// DriverService menangani autentikasi, profil, dan dompet mitra
+service DriverService {
+  // CheckPhoneExists mengecek apakah sebuah nomor HP sudah terdaftar sebagai mitra aktif.
+  // Dipanggil oleh Customer Service via gRPC saat /register untuk deteksi dual-role.
+  rpc CheckPhoneExists(CheckPhoneExistsRequest) returns (CheckPhoneExistsResponse);
+
+  // Method lain bisa ditambahkan di sini saat dibutuhkan:
+  // rpc Register(RegisterRequest) returns (RegisterResponse);
+  // rpc VerifyOTP(VerifyOTPRequest) returns (VerifyOTPResponse);
+  // rpc DeductWallet(DeductWalletRequest) returns (DeductWalletResponse);
+  // rpc CreateTopupRequest(CreateTopupRequestRequest) returns (CreateTopupRequestResponse);
+  // rpc GetWalletInfo(GetWalletInfoRequest) returns (GetWalletInfoResponse);
+}
+
+// CheckPhoneExistsRequest — input nomor HP yang ingin dicek
+message CheckPhoneExistsRequest {
+  string phone_number = 1; // Format E.164 (+62...)
+}
+
+// CheckPhoneExistsResponse — hasil pengecekan
+message CheckPhoneExistsResponse {
+  bool exists = 1; // true jika ada row di drivers dengan phone_number ini
+                   // DAN is_active = TRUE (soft-delete aware)
+}

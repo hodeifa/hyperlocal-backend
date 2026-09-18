@@ -22,6 +22,8 @@ type Cache interface {
 	GeoAdd(ctx context.Context, key string, locations ...*redis.GeoLocation) error
 	GeoRadius(ctx context.Context, key string, lon, lat, radius float64, unit string) ([]redis.GeoLocation, error)
 	Ping(ctx context.Context) error
+	Incr(ctx context.Context, key string) (int64, error)
+	Expire(ctx context.Context, key string, expiration time.Duration) (bool, error)
 }
 
 // Client adalah implementation konkret dari Cache.
@@ -72,4 +74,11 @@ func (c *Client) Ping(ctx context.Context) error {
 // ke *cache.Client secara langsung, bukan ke interface Cache.
 func (c *Client) GetRedisClient() *redis.Client {
 	return c.rdb
+}
+
+func (c *Client) Incr(ctx context.Context, key string) (int64, error) {
+	return c.rdb.Incr(ctx, key).Result()
+}
+func (c *Client) Expire(ctx context.Context, key string, expiration time.Duration) (bool, error) {
+	return c.rdb.Expire(ctx, key, expiration).Result()
 }

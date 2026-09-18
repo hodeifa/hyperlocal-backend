@@ -47,8 +47,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hodeifa/hyperlocal-backend/pkg/middleware"
 )
-
-func main() {
+//ubah jadi main kalau mau di test
+func main_temp() {
 	// Set Gin mode based on environment
 	if os.Getenv("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
