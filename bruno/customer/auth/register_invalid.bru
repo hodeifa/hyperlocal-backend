@@ -1,0 +1,23 @@
+meta {
+  name: Register Customer - Invalid Phone Format
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/customer/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "phone_number": "08123456789" 
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+}

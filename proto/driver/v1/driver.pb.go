@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -20,16 +21,130 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// CheckPhoneExistsRequest — input nomor HP yang ingin dicek
+type CheckPhoneExistsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PhoneNumber   string                 `protobuf:"bytes,1,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"` // Format E.164 (+62...)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckPhoneExistsRequest) Reset() {
+	*x = CheckPhoneExistsRequest{}
+	mi := &file_proto_driver_v1_driver_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckPhoneExistsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckPhoneExistsRequest) ProtoMessage() {}
+
+func (x *CheckPhoneExistsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_driver_v1_driver_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckPhoneExistsRequest.ProtoReflect.Descriptor instead.
+func (*CheckPhoneExistsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_driver_v1_driver_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *CheckPhoneExistsRequest) GetPhoneNumber() string {
+	if x != nil {
+		return x.PhoneNumber
+	}
+	return ""
+}
+
+// CheckPhoneExistsResponse — hasil pengecekan
+type CheckPhoneExistsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Exists        bool                   `protobuf:"varint,1,opt,name=exists,proto3" json:"exists,omitempty"` // true jika ada row di drivers dengan phone_number ini
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckPhoneExistsResponse) Reset() {
+	*x = CheckPhoneExistsResponse{}
+	mi := &file_proto_driver_v1_driver_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckPhoneExistsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckPhoneExistsResponse) ProtoMessage() {}
+
+func (x *CheckPhoneExistsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_driver_v1_driver_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckPhoneExistsResponse.ProtoReflect.Descriptor instead.
+func (*CheckPhoneExistsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_driver_v1_driver_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CheckPhoneExistsResponse) GetExists() bool {
+	if x != nil {
+		return x.Exists
+	}
+	return false
+}
+
 var File_proto_driver_v1_driver_proto protoreflect.FileDescriptor
 
 const file_proto_driver_v1_driver_proto_rawDesc = "" +
 	"\n" +
-	"\x1cproto/driver/v1/driver.proto\x12\tdriver.v1B>Z<github.com/hodeifa/hyperlocal-backend/proto/driver/v1;driverb\x06proto3"
+	"\x1cproto/driver/v1/driver.proto\x12\tdriver.v1\"<\n" +
+	"\x17CheckPhoneExistsRequest\x12!\n" +
+	"\fphone_number\x18\x01 \x01(\tR\vphoneNumber\"2\n" +
+	"\x18CheckPhoneExistsResponse\x12\x16\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists2l\n" +
+	"\rDriverService\x12[\n" +
+	"\x10CheckPhoneExists\x12\".driver.v1.CheckPhoneExistsRequest\x1a#.driver.v1.CheckPhoneExistsResponseB>Z<github.com/hodeifa/hyperlocal-backend/proto/driver/v1;driverb\x06proto3"
 
-var file_proto_driver_v1_driver_proto_goTypes = []any{}
+var (
+	file_proto_driver_v1_driver_proto_rawDescOnce sync.Once
+	file_proto_driver_v1_driver_proto_rawDescData []byte
+)
+
+func file_proto_driver_v1_driver_proto_rawDescGZIP() []byte {
+	file_proto_driver_v1_driver_proto_rawDescOnce.Do(func() {
+		file_proto_driver_v1_driver_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_driver_v1_driver_proto_rawDesc), len(file_proto_driver_v1_driver_proto_rawDesc)))
+	})
+	return file_proto_driver_v1_driver_proto_rawDescData
+}
+
+var file_proto_driver_v1_driver_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_driver_v1_driver_proto_goTypes = []any{
+	(*CheckPhoneExistsRequest)(nil),  // 0: driver.v1.CheckPhoneExistsRequest
+	(*CheckPhoneExistsResponse)(nil), // 1: driver.v1.CheckPhoneExistsResponse
+}
 var file_proto_driver_v1_driver_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
+	0, // 0: driver.v1.DriverService.CheckPhoneExists:input_type -> driver.v1.CheckPhoneExistsRequest
+	1, // 1: driver.v1.DriverService.CheckPhoneExists:output_type -> driver.v1.CheckPhoneExistsResponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -46,12 +161,13 @@ func file_proto_driver_v1_driver_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_driver_v1_driver_proto_rawDesc), len(file_proto_driver_v1_driver_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   2,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_proto_driver_v1_driver_proto_goTypes,
 		DependencyIndexes: file_proto_driver_v1_driver_proto_depIdxs,
+		MessageInfos:      file_proto_driver_v1_driver_proto_msgTypes,
 	}.Build()
 	File_proto_driver_v1_driver_proto = out.File
 	file_proto_driver_v1_driver_proto_goTypes = nil

@@ -1,42 +1,51 @@
 package v1
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker"
 
-	// [FIX] Gunakan prefix github.com/hodeifa/ sesuai go.mod
 	"github.com/hodeifa/hyperlocal-backend/api-gateway/config"
 	"github.com/hodeifa/hyperlocal-backend/api-gateway/internal/middleware"
+	pb "github.com/hodeifa/hyperlocal-backend/proto/customer/v1"
 )
 
 // SetupRouter mendaftarkan semua route API v1.
-func SetupRouter(r *gin.Engine, cfg config.Config) {
-	if cfg.JWTSecret == "" {
-		log.Println("⚠️  WARNING: JWT_SECRET is empty. JWT middleware will reject all tokens.")
-	}
+func SetupRouter(
+	r *gin.Engine,
+	cfg *config.Config,
+	customerClient pb.CustomerServiceClient,
+	customerCB *gobreaker.CircuitBreaker,
+) {
+	// Inisialisasi handler dengan dependency gRPC
+	authHandler := NewAuthHandler(customerClient, customerCB)
 
+	// Inisialisasi middleware JWT (sesuaikan dengan nama middleware JWT Anda)
 	jwtAuth := middleware.JWTAuthMiddleware(middleware.JWTAuthConfig{
-		SecretKey: cfg.JWTSecret,
+    SecretKey: cfg.JWTSecret,
 	})
 
-	api := r.Group("/api/v1")
-
+	// =============================================
 	// A. PUBLIC ROUTES — /api/v1/auth/customer/
-	authCustomer := api.Group("/auth/customer")
+	// =============================================
+	authCustomer := r.Group("/api/v1/auth/customer")
 	{
-		authCustomer.POST("/register", handleRegister)
+		authCustomer.POST("/register", authHandler.Register)
 		authCustomer.POST("/verify-otp", handleVerifyOTP)
 		authCustomer.POST("/login", handleLogin)
 		authCustomer.POST("/refresh", handleRefresh)
 
+		// Protected auth routes (butuh JWT)
 		authCustomerProtected := authCustomer.Group("")
 		authCustomerProtected.Use(jwtAuth, middleware.RoleGuard())
 		authCustomerProtected.POST("/revoke_all", handleRevokeAll)
 	}
 
+	// =============================================
 	// B. PROTECTED ROUTES — /api/v1/customer/
+	// =============================================
+	api := r.Group("/api/v1")
 	customer := api.Group("/customer")
 	customer.Use(jwtAuth, middleware.RoleGuard())
 	{
@@ -47,17 +56,11 @@ func SetupRouter(r *gin.Engine, cfg config.Config) {
 		customer.DELETE("/addresses/:id", handleDeleteAddress)
 	}
 }
+
 // =============================================
 // STUB HANDLERS — akan diganti dengan implementasi nyata
 // di sprint berikutnya. Untuk sekarang return 501.
 // =============================================
-
-func handleRegister(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error":   "not_implemented",
-		"message": "Handler register belum diimplementasikan",
-	})
-}
 
 func handleVerifyOTP(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{

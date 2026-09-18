@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -20,16 +21,137 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GetOrderChatMetadataRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOrderChatMetadataRequest) Reset() {
+	*x = GetOrderChatMetadataRequest{}
+	mi := &file_proto_chat_v1_chat_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOrderChatMetadataRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOrderChatMetadataRequest) ProtoMessage() {}
+
+func (x *GetOrderChatMetadataRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_chat_v1_chat_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOrderChatMetadataRequest.ProtoReflect.Descriptor instead.
+func (*GetOrderChatMetadataRequest) Descriptor() ([]byte, []int) {
+	return file_proto_chat_v1_chat_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetOrderChatMetadataRequest) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+type GetOrderChatMetadataResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	HasAttachments bool                   `protobuf:"varint,1,opt,name=has_attachments,json=hasAttachments,proto3" json:"has_attachments,omitempty"`
+	UnreadCount    int32                  `protobuf:"varint,2,opt,name=unread_count,json=unreadCount,proto3" json:"unread_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetOrderChatMetadataResponse) Reset() {
+	*x = GetOrderChatMetadataResponse{}
+	mi := &file_proto_chat_v1_chat_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOrderChatMetadataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOrderChatMetadataResponse) ProtoMessage() {}
+
+func (x *GetOrderChatMetadataResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_chat_v1_chat_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOrderChatMetadataResponse.ProtoReflect.Descriptor instead.
+func (*GetOrderChatMetadataResponse) Descriptor() ([]byte, []int) {
+	return file_proto_chat_v1_chat_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetOrderChatMetadataResponse) GetHasAttachments() bool {
+	if x != nil {
+		return x.HasAttachments
+	}
+	return false
+}
+
+func (x *GetOrderChatMetadataResponse) GetUnreadCount() int32 {
+	if x != nil {
+		return x.UnreadCount
+	}
+	return 0
+}
+
 var File_proto_chat_v1_chat_proto protoreflect.FileDescriptor
 
 const file_proto_chat_v1_chat_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/chat/v1/chat.proto\x12\achat.v1B:Z8github.com/hodeifa/hyperlocal-backend/proto/chat/v1;chatb\x06proto3"
+	"\x18proto/chat/v1/chat.proto\x12\achat.v1\"8\n" +
+	"\x1bGetOrderChatMetadataRequest\x12\x19\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\"j\n" +
+	"\x1cGetOrderChatMetadataResponse\x12'\n" +
+	"\x0fhas_attachments\x18\x01 \x01(\bR\x0ehasAttachments\x12!\n" +
+	"\funread_count\x18\x02 \x01(\x05R\vunreadCount2r\n" +
+	"\vChatService\x12c\n" +
+	"\x14GetOrderChatMetadata\x12$.chat.v1.GetOrderChatMetadataRequest\x1a%.chat.v1.GetOrderChatMetadataResponseB:Z8github.com/hodeifa/hyperlocal-backend/proto/chat/v1;chatb\x06proto3"
 
-var file_proto_chat_v1_chat_proto_goTypes = []any{}
+var (
+	file_proto_chat_v1_chat_proto_rawDescOnce sync.Once
+	file_proto_chat_v1_chat_proto_rawDescData []byte
+)
+
+func file_proto_chat_v1_chat_proto_rawDescGZIP() []byte {
+	file_proto_chat_v1_chat_proto_rawDescOnce.Do(func() {
+		file_proto_chat_v1_chat_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_chat_v1_chat_proto_rawDesc), len(file_proto_chat_v1_chat_proto_rawDesc)))
+	})
+	return file_proto_chat_v1_chat_proto_rawDescData
+}
+
+var file_proto_chat_v1_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_chat_v1_chat_proto_goTypes = []any{
+	(*GetOrderChatMetadataRequest)(nil),  // 0: chat.v1.GetOrderChatMetadataRequest
+	(*GetOrderChatMetadataResponse)(nil), // 1: chat.v1.GetOrderChatMetadataResponse
+}
 var file_proto_chat_v1_chat_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
+	0, // 0: chat.v1.ChatService.GetOrderChatMetadata:input_type -> chat.v1.GetOrderChatMetadataRequest
+	1, // 1: chat.v1.ChatService.GetOrderChatMetadata:output_type -> chat.v1.GetOrderChatMetadataResponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -46,12 +168,13 @@ func file_proto_chat_v1_chat_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_chat_v1_chat_proto_rawDesc), len(file_proto_chat_v1_chat_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   2,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_proto_chat_v1_chat_proto_goTypes,
 		DependencyIndexes: file_proto_chat_v1_chat_proto_depIdxs,
+		MessageInfos:      file_proto_chat_v1_chat_proto_msgTypes,
 	}.Build()
 	File_proto_chat_v1_chat_proto = out.File
 	file_proto_chat_v1_chat_proto_goTypes = nil

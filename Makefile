@@ -100,8 +100,8 @@ lint:
 	done
 	@echo "✅ All modules passed linting!"
 	
-.PHONY: proto-gen
-proto-gen:
+.PHONY: proto
+proto:
 	@echo "🧹 Cleaning old generated files..."
 	@find proto -name "*.pb.go" -type f -delete
 	@find proto -name "*_grpc.pb.go" -type f -delete
